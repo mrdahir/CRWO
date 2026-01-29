@@ -1,0 +1,242 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Tacsi Dayn -CarwoDeeqsan Management System{% endblock %}
+
+{% block content %}
+<!-- Debug Info -->
+<div class="alert alert-info">
+    <strong>Debug Info:</strong>
+    Customer ID: {{ customer.id }},
+    USD Debt: ${{ current_debt_usd|floatformat:2 }},
+    SOS Debt: {{ current_debt_sos|floatformat:2 }} SOS,
+    ETB Debt: {{ current_debt_etb|floatformat:2 }} ETB
+</div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-money-bill me-2"></i>Tacsi Dayn
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'core:customer_detail' customer.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Ku Noqo Macmiilka
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-credit-card me-2"></i>Xogaha Lacagta
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label
+                                }}</label>
+                            {{ form.amount }}
+                            {% if form.amount.errors %}
+                            <div class="text-danger small">{{ form.amount.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.currency.id_for_label }}" class="form-label">{{ form.currency.label
+                                }}</label>
+                            {{ form.currency }}
+                            {% if form.currency.errors %}
+                            <div class="text-danger small">{{ form.currency.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Customer</label>
+                            <div class="form-control-plaintext">{{ customer.name }} ({{ customer.phone }})</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="text-danger small">{{ form.notes.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'core:customer_detail' customer.id %}"
+                            class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-times me-2"></i>Cillid
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Tacsi Bixinta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user me-2"></i>Xogaha Macmiilka
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>{{ customer.name }}</h6>
+                <p class="text-muted">{{ customer.phone }}</p>
+
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border rounded p-3 bg-warning text-white">
+                            <h5 class="mb-0">${{ current_debt_usd|floatformat:2 }}</h5>
+                            <small>USD Debt</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-3 bg-warning text-white">
+                            <h5 class="mb-0">{{ current_debt_sos|floatformat:0 }}</h5>
+                            <small>SOS Debt</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row text-center mt-2">
+                    <div class="col-12">
+                        <div class="border rounded p-3 bg-warning text-white">
+                            <h5 class="mb-0">{{ current_debt_etb|floatformat:2 }}</h5>
+                            <small>ETB Debt</small>
+                        </div>
+                    </div>
+                </div>
+
+                {% if current_debt_usd > 0 or current_debt_sos > 0 or current_debt_etb > 0 %}
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Payment Instructions:</strong>
+                    <ul class="mb-0 mt-2">
+                        {% if current_debt_usd > 0 %}
+                        <li>For USD debt: Select <strong>USD</strong> currency and enter amount in USD</li>
+                        {% endif %}
+                        {% if current_debt_sos > 0 %}
+                        <li>For SOS debt: Select <strong>SOS</strong> currency and enter amount in SOS</li>
+                        {% endif %}
+                        {% if current_debt_etb > 0 %}
+                        <li>For ETB debt: Select <strong>ETB</strong> currency and enter amount in ETB</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <hr>
+
+                <div class="d-flex justify-content-between">
+                    <span>Customer Since:</span>
+                    <small class="text-muted">{{ customer.date_created|date:"M d, Y" }}</small>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Last Purchase:</span>
+                    <small class="text-muted">
+                        {% if customer.last_purchase_date %}
+                        {{ customer.last_purchase_date|date:"M d, Y" }}
+                        {% else %}
+                        No purchases
+                        {% endif %}
+                    </small>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Status:</span>
+                    {% if current_debt_usd > 0 or current_debt_sos > 0 or current_debt_etb > 0 %}
+                    <span class="badge bg-warning">Has Debt</span>
+                    {% else %}
+                    <span class="badge bg-success">Good Standing</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Payment Guidelines
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Select the correct currency (USD, SOS, or ETB)
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Payment amount cannot exceed debt in that currency
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Partial payments are allowed
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        All payments are logged
+                    </li>
+                    <li>
+                        <i class="fas fa-check text-success me-2"></i>
+                        Customer debt is updated automatically
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Recent Payments
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if payments %}
+                {% for payment in payments|slice:":3" %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        {% if payment.original_currency == 'USD' %}
+                        <strong>${{ payment.original_amount|floatformat:2 }}</strong>
+                        <br><small class="text-muted">USD Payment</small>
+                        {% elif payment.original_currency == 'SOS' %}
+                        <strong>{{ payment.original_amount|floatformat:0 }} SOS</strong>
+                        <br><small class="text-muted">SOS Payment</small>
+                        {% elif payment.original_currency == 'ETB' %}
+                        <strong>{{ payment.original_amount|floatformat:2 }} ETB</strong>
+                        <br><small class="text-muted">ETB Payment</small>
+                        {% endif %}
+                        <br>
+                        <small class="text-muted">{{ payment.date_created|date:"M d, Y" }}</small>
+                    </div>
+                    <small class="text-muted">
+                        {% if payment.user %}
+                            {{ payment.user.get_full_name|default:payment.user.username }}
+                        {% else %}
+                            Admin
+                        {% endif %}
+                    </small>
+                </div>
+                {% if not forloop.last %}
+                <hr>{% endif %}
+                {% endfor %}
+                {% else %}
+                <p class="text-muted text-center mb-0">No recent payments</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

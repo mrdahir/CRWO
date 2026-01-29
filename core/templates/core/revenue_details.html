@@ -1,0 +1,220 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Revenue Details - Carwo Deeqsan{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active">Revenue Details</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold mb-0">Faahfaahinta Dakhliga</h1>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-primary bg-opacity-10">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small mb-1">Total Revenue</p>
+                        <h4 class="fw-bold mb-0 text-primary">{{ total_revenue_etb|floatformat:2 }} ETB</h4>
+                    </div>
+                    <i class="fas fa-dollar-sign fa-2x text-primary opacity-25"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-success bg-opacity-10">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small mb-1">Items Sold</p>
+                        <h4 class="fw-bold mb-0 text-success">{{ total_items_sold|floatformat:0 }}</h4>
+                    </div>
+                    <i class="fas fa-shopping-cart fa-2x text-success opacity-25"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-info bg-opacity-10">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small mb-1">Average Sale</p>
+                        <h4 class="fw-bold mb-0 text-info">{{ avg_sale_value|floatformat:2 }} ETB</h4>
+                    </div>
+                    <i class="fas fa-chart-line fa-2x text-info opacity-25"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Period</label>
+                <select name="days" class="form-select" onchange="this.form.submit()">
+                    <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+                    <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+                    <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Category</label>
+                <select name="category" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if category_filter == cat.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Sort By</label>
+                <select name="sort" class="form-select" onchange="this.form.submit()">
+                    <option value="revenue" {% if sort_by == 'revenue' %}selected{% endif %}>Revenue (High to Low)</option>
+                    <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Quantity Sold</option>
+                    <option value="date" {% if sort_by == 'date' %}selected{% endif %}>Most Recent</option>
+                </select>
+            </div>
+            <div class="col-md-3 mt-2">
+                <label class="form-label small fw-bold">From date</label>
+                <input type="date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-3 mt-2">
+                <label class="form-label small fw-bold">To date</label>
+                <div class="d-flex gap-2">
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+                    <button type="submit" class="btn btn-primary btn-sm align-self-end">Filter</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Revenue Items -->
+<div class="card shadow-sm">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0 fw-bold"><i class="fas fa-boxes me-2 text-primary"></i>Product Revenue Breakdown</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if revenue_items %}
+        <!-- Desktop View -->
+        <div class="d-none d-md-block">
+            {% for item in revenue_items %}
+            <div class="border-bottom p-3 hover-bg-light" style="cursor: pointer" onclick="toggleDetails('details-{{ forloop.counter }}')">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="fw-bold text-primary">{{ item.product.name }}</div>
+                        <small class="text-muted">{{ item.product.category.name|default:"Uncategorized" }}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold text-success">{{ item.total_revenue_etb|floatformat:2 }} ETB</div>
+                        <small class="text-muted">{{ item.total_qty|floatformat:0 }} items sold</small>
+                    </div>
+                    <i class="fas fa-chevron-down ms-3 text-muted" id="icon-{{ forloop.counter }}"></i>
+                </div>
+                <div id="details-{{ forloop.counter }}" class="mt-3" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Qty</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                    <th>Currency</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sale_item in item.items %}
+                                <tr>
+                                    <td>{{ sale_item.quantity|floatformat:1 }}</td>
+                                    <td>{{ sale_item.unit_price|floatformat:2 }}</td>
+                                    <td class="fw-bold">{{ sale_item.total_price|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="badge {% if sale_item.currency == 'USD' %}bg-primary{% elif sale_item.currency == 'SOS' %}bg-success{% else %}bg-info{% endif %}">
+                                            {{ sale_item.currency }}
+                                        </span>
+                                    </td>
+                                    <td class="text-muted small">{{ sale_item.date|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Mobile View -->
+        <div class="d-md-none">
+            {% for item in revenue_items %}
+            <div class="border-bottom p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <div class="fw-bold">{{ item.product.name }}</div>
+                        <small class="text-muted">{{ item.product.category.name|default:"Uncategorized" }}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold text-success">{{ item.total_revenue_etb|floatformat:2 }}</div>
+                        <small class="text-muted">ETB</small>
+                    </div>
+                </div>
+                <div class="row g-2 mt-2">
+                    <div class="col-6">
+                        <small class="text-muted d-block">Quantity Sold</small>
+                        <div class="fw-bold">{{ item.total_qty|floatformat:0 }}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">Sales Count</small>
+                        <div class="fw-bold">{{ item.items|length }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-5 text-center text-muted">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <p class="mb-0">No revenue data found for the selected period</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleDetails(id) {
+        const element = document.getElementById(id);
+        const iconId = id.split('-')[1];
+        const icon = document.getElementById('icon-' + iconId);
+        
+        if (element && icon) {
+            if (element.style.display === 'none') {
+                element.style.display = 'block';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                element.style.display = 'none';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+    }
+</script>
+{% endblock %}

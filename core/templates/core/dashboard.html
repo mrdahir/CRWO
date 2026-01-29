@@ -1,0 +1,804 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}xogaha{% endblock %}
+{% block extra_css %}
+<style>
+    /* Dashboard-specific Grid Layouts */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--space-md);
+        margin-bottom: var(--space-lg);
+    }
+
+    /* Stat Cards - Unified Design */
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 160px;
+        transition: transform var(--transition-base), box-shadow var(--transition-base);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary-light);
+    }
+
+    /* Colorful left accent border */
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+        background: var(--card-accent, var(--primary-color));
+    }
+
+    .stat-card-primary { --card-accent: var(--primary-color); }
+    .stat-card-success { --card-accent: var(--success-color); }
+    .stat-card-warning { --card-accent: var(--warning-color); }
+    .stat-card-danger { --card-accent: var(--danger-color); }
+    .stat-card-info { --card-accent: var(--info-color); }
+    .stat-card-dark { --card-accent: var(--secondary-color); }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: var(--space-md);
+        background: var(--bg-body);
+        color: var(--card-accent);
+    }
+
+    .stat-value {
+        font-size: var(--font-size-3xl);
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1.2;
+        margin-bottom: var(--space-xs);
+    }
+
+    .stat-label {
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-footer {
+        margin-top: var(--space-md);
+        padding-top: var(--space-sm);
+        border-top: 1px solid var(--border-color);
+        font-size: var(--font-size-xs);
+        color: var(--text-muted);
+    }
+
+    /* Quick Actions Floating Button */
+    .floating-action-btn {
+        position: fixed;
+        bottom: calc(var(--bottom-nav-height) + var(--space-md) + var(--safe-area-bottom));
+        right: var(--space-md);
+        z-index: 1000;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-floating);
+        border: none;
+        transition: transform var(--transition-base);
+    }
+
+    .floating-action-btn:active {
+        transform: scale(0.95);
+    }
+
+    @media (min-width: 1024px) {
+        .floating-action-btn { display: none; }
+        .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* Chart Container */
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    /* List Group Customization */
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        padding: var(--space-md);
+    }
+
+    .list-group-item:first-child { border-top: none; }
+    .list-group-item:last-child { border-bottom: none; }
+</style>
+{% endblock %}
+{% block content %}
+<!-- Header Bar -->
+<div class="d-flex justify-content-between align-items-center mb-4 pt-2">
+    <div>
+        <h1 class="h3 mb-1 fw-bold">xogaha</h1>
+        <p class="text-secondary mb-0 text-truncate">Welcome back, {{ user.get_full_name|default:user.username }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" onclick="refreshDashboard()">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+        {% if user.is_superuser %}
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-bolt me-2"></i>halkan kagal
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-2">
+                <li><a class="dropdown-item rounded-2 mb-1" href="{% url 'core:create_sale' %}">
+                    <i class="fas fa-shopping-cart me-2 text-success"></i>Iib Cusub</a></li>
+                <li><a class="dropdown-item rounded-2 mb-1" href="{% url 'core:create_customer' %}">
+                    <i class="fas fa-user-plus me-2 text-info"></i>Macmiil Cusub</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item rounded-2 mb-1" href="{% url 'core:restock_inventory' %}">
+                    <i class="fas fa-boxes me-2 text-warning"></i>Kaydka biiri</a></li>
+                <li><a class="dropdown-item rounded-2 mb-1" href="{% url 'core:sales_list' %}">
+                    <i class="fas fa-list-alt me-2 text-primary"></i>Taariikhda Iibka</a></li>
+                <li><a class="dropdown-item rounded-2 mb-1" href="{% url 'core:currency_settings' %}">
+                    <i class="fas fa-cog me-2 text-dark"></i>Xogaha</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item rounded-2" href="#" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                    <i class="fas fa-plus me-2 text-primary"></i>Alaab Cusub</a></li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Key Metrics Grid -->
+<div class="stats-grid">
+    <!-- Total Sales Revenue Card -->
+    <a href="{% url 'core:revenue_details' %}" class="text-decoration-none" style="color: inherit;">
+        <div class="stat-card stat-card-info" style="cursor: pointer; transition: transform 0.2s;"
+            onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Wadarta Iibka Maanta</div>
+                    <div class="stat-value">{{ total_sales_revenue_etb|floatformat:0 }} ETB</div>
+                </div>
+                <div class="stat-icon mt-1">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+            </div>
+            <div class="stat-footer d-flex gap-2">
+                <span>Qiimaha guud ee iibka (total_amount)</span>
+                <i class="fas fa-arrow-right ms-auto"></i>
+            </div>
+        </div>
+    </a>
+    
+    <!-- Cash Collected Card -->
+    <a href="{% url 'core:revenue_details' %}" class="text-decoration-none" style="color: inherit;">
+        <div class="stat-card stat-card-primary" style="cursor: pointer; transition: transform 0.2s;"
+            onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Lacagta La Qabtay</div>
+                    <div class="stat-value">{{ cash_collected_etb|floatformat:0 }} ETB</div>
+                </div>
+                <div class="stat-icon mt-1">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+            </div>
+            <div class="stat-footer d-flex gap-2">
+                <span>Lacagta dhabta ah ee la helay</span>
+                <i class="fas fa-arrow-right ms-auto"></i>
+            </div>
+        </div>
+    </a>
+    
+    <!-- Outstanding Debt Today Card -->
+    <div class="stat-card stat-card-warning">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-label">Daynta Maanta</div>
+                <div class="stat-value">
+                    {% if outstanding_debt_today_etb < 0 %} 
+                        0 ETB 
+                    {% else %} 
+                        {{ outstanding_debt_today_etb|floatformat:0 }} ETB 
+                    {% endif %}
+                </div>
+            </div>
+            <div class="stat-icon mt-1">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+        <div class="stat-footer">
+            <span class="text-muted small">
+                {% if outstanding_debt_today_etb < 0 %} 
+                    Lacag dheeraad ah ayaa la bixiyay ({{ collection_rate|floatformat:0 }}%) 
+                {% else %} 
+                    Daynta ka hadhay iibka maanta ({{ collection_rate|floatformat:0 }}% waa la bixiyay) 
+                {% endif %}
+            </span>
+        </div>
+    </div>
+    
+    <!-- Transactions Card -->
+    <a href="{% url 'core:sales_history' %}" class="text-decoration-none" style="color: inherit;">
+        <div class="stat-card stat-card-success" style="cursor: pointer; transition: transform 0.2s;"
+            onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Xaddiga iibka manta</div>
+                    <div class="stat-value">{{ today_transactions }}</div>
+                </div>
+                <div class="stat-icon mt-1">
+                    <i class="fas fa-receipt"></i>
+                </div>
+            </div>
+            <div class="stat-footer">
+                <span class="text-success"><i class="fas fa-arrow-up me-1"></i>Jira</span> maanta
+                <i class="fas fa-arrow-right ms-auto"></i>
+            </div>
+        </div>
+    </a>
+    
+    {% if user.is_superuser %}
+    <!-- Enhanced Profit Card -->
+    <a href="{% url 'core:detailed_transaction_report' %}" class="text-decoration-none" style="color: inherit; display: block;">
+ 
+    <div class="stat-card stat-card-success">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="stat-label">Faa'iidada Maanta</div>
+                <div class="stat-value text-success">{{ actual_profit_etb|floatformat:0 }} ETB</div>
+                <small class="text-muted d-block mt-1">Dhabta ah (Actual Profit)</small>
+            </div>
+            <div class="stat-icon mt-1">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+        <div class="mt-3 pt-3 border-top">
+            <div class="d-flex justify-content-between mb-2">
+                <small class="text-muted">Filashada (Expected):</small>
+                <small class="fw-bold">{{ expected_profit_etb|floatformat:0 }} ETB</small>
+            </div>
+            {% if profit_variance_etb > 0 %}
+            <div class="d-flex justify-content-between mb-2">
+                <small class="text-muted">Khasaar (Variance):</small>
+                <small class="fw-bold text-warning">-{{ profit_variance_etb|floatformat:0 }} ETB</small>
+            </div>
+            {% endif %}
+            {% if bonus_profit_etb > 0 %}
+            <div class="d-flex justify-content-between">
+                <small class="text-muted">Dheeraad (Bonus):</small>
+                <small class="fw-bold text-success">+{{ bonus_profit_etb|floatformat:0 }} ETB</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Debt Card -->
+    <a href="{% url 'core:customers_debt' %}" class="text-decoration-none" style="color: inherit;">
+        <div class="stat-card stat-card-danger" style="cursor: pointer; transition: transform 0.2s;"
+            onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Wadarta Daynku</div>
+                    <div class="stat-value">{{ total_debt_etb|floatformat:0 }} ETB</div>
+                </div>
+                <div class="stat-icon mt-1">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </div>
+            </div>
+            <div class="stat-footer">
+                <span>{{ customers_with_debt|default:0 }} macmiil dayn laguleyahay</span>
+                <i class="fas fa-arrow-right ms-auto"></i>
+            </div>
+        </div>
+    </a>
+    
+    <!-- Overpayment Alert Card -->
+    {% if user.is_superuser and overpayment_count > 0 %}
+    <div class="stat-card stat-card-info">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="stat-label">Lacag Dheeraad ah</div>
+                <div class="stat-value">{{ total_overpayments_etb|floatformat:0 }} ETB</div>
+            </div>
+            <div class="stat-icon mt-1">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+        </div>
+        <div class="stat-footer">
+            <span class="text-info">
+                <i class="fas fa-info-circle me-1"></i>{{ overpayment_count }} iib oo lacag dheeraad ah laga bixiyay
+            </span>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Secondary Grid: Inventory & Exchange -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-3 text-center">
+                <div class="text-primary mb-2"><i class="fas fa-box fa-2x"></i></div>
+                <h3 class="h4 fw-bold mb-0">{{ total_products|default:0 }}</h3>
+                <small class="text-muted">Wadarta Alaabtaha</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-3 text-center">
+                <div class="text-warning mb-2"><i class="fas fa-exclamation-triangle fa-2x"></i></div>
+                <h3 class="h4 fw-bold mb-0">{{ low_stock_count|default:0 }}</h3>
+                <small class="text-muted">Kaydka Yar</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-3 text-center">
+                <div class="text-danger mb-2"><i class="fas fa-times-circle fa-2x"></i></div>
+                <h3 class="h4 fw-bold mb-0">{{ out_of_stock_count|default:0 }}</h3>
+                <small class="text-muted">Kaydka Maba Jiro</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-3 text-center">
+                <div class="text-secondary mb-2"><i class="fas fa-exchange-alt fa-2x"></i></div>
+                <h3 class="h4 fw-bold mb-0">{{ exchange_rate|floatformat:0 }}</h3>
+                <small class="text-muted">sicirka somalilandshilling</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="row g-4">
+    <!-- Charts Section -->
+    <div class="col-lg-8">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold mb-0">Waxqabadka Todobaadka</h5>
+            </div>
+            <div class="card-body px-4">
+                <div class="chart-container">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Selling Section -->
+    <div class="col-lg-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">Alaabta Ugu iibsiga badan</h5>
+                <a href="{% url 'core:restock_inventory' %}" class="text-decoration-none small fw-bold">Biiri Alaabta</a>
+            </div>
+            <div class="card-body px-0">
+                {% if top_selling_items %}
+                <div class="list-group list-group-flush">
+                    {% for item in top_selling_items %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-light rounded-circle p-2 me-3 text-primary">
+                                <i class="fas fa-tag"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">{{ item.name }}</div>
+                                <small class="text-muted">{{ item.total_qty|floatformat:0 }} la iibiyay</small>
+                            </div>
+                        </div>
+                        <div class="fw-bold fs-sm">
+                            {{ item.total_revenue_etb|default:0|floatformat:0 }} ETB
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-box-open fa-2x mb-3 opacity-50"></i>
+                    <p>Wali jirin alaab lagu iibiyay todobaadkan</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity Section (CRITICAL FIX: CORRECT HTML STRUCTURE) -->
+    <div class="col-lg-12">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold mb-0"><i class="fas fa-history me-2"></i>Falcelinta Dhowaan</h5>
+            </div>
+            <div class="card-body px-0">
+                {% if recent_activity %}
+                <div class="list-group list-group-flush">
+                    {% for sale in recent_activity %}
+                    <div class="list-group-item">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="bg-success bg-opacity-10 text-success rounded-circle p-2">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Iib: {{ sale.customer.name|default:"Macmiil Jooga" }}</div>
+                                <small class="text-muted">
+                                    lagu sameeyay <strong>{{ sale.user.get_full_name|default:sale.user.username }}</strong>
+                                    &bull; {{ sale.date_created|timesince }} kahor
+                                    {% if not sale.is_paid %} &bull; <span class="text-danger">La mabixine</span>{% endif %}
+                                </small>
+                            </div>
+                            <div class="text-end fw-bold text-dark">
+                                {{ sale.amount_etb|floatformat:0 }} ETB
+                                <div class="small text-muted fw-normal">
+                                    {{ sale.original_amount|floatformat:2 }} {{ sale.currency }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-muted text-center py-4">Wali jirin waxqabadka dhowaan</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div> <!-- CLOSES MAIN CONTENT GRID ROW -->
+
+<!-- Low Stock & Debtor Alerts Row -->
+<div class="row g-4 mt-1">
+    {% if low_stock_products %}
+    <div class="col-lg-6">
+        <div class="card h-100 border-danger shadow-sm border-0 border-start border-4">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold text-danger mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alerts</h5>
+            </div>
+            <div class="card-body px-0">
+                <div class="list-group list-group-flush">
+                    {% for product in low_stock_products|slice:":5" %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold">{{ product.name }}</div>
+                            <small class="text-danger">Left: {{ product.current_stock }} (Min: {{ product.low_stock_threshold }})</small>
+                        </div>
+                        <a href="{% url 'core:restock_inventory' %}?product={{ product.id }}" class="btn btn-sm btn-outline-danger shadow-none fw-bold">Restock</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if top_debtors %}
+    <div class="col-lg-6">
+        <div class="card h-100 border-info shadow-sm border-0 border-start border-4">
+            <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                <h5 class="fw-bold text-info mb-0"><i class="fas fa-user-clock me-2"></i>Deymaha</h5>
+            </div>
+            <div class="card-body px-0">
+                <div class="list-group list-group-flush">
+                    {% for customer in top_debtors|slice:":5" %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold">{{ customer.name }}</div>
+                            <small class="text-muted">{{ customer.phone }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-danger">
+                                {% if customer.total_debt_usd > 0 %}
+                                    ${{ customer.total_debt_usd|floatformat:2 }} USD
+                                {% elif customer.total_debt_sos > 0 %}
+                                    {{ customer.total_debt_sos|floatformat:0 }} SOS
+                                {% elif customer.total_debt_etb > 0 %}
+                                    {{ customer.total_debt_etb|floatformat:0 }} ETB
+                                {% else %}
+                                    $0.00
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">{{ customer.last_purchase_date|date:"M d" }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Actions Mobile FAB -->
+<div class="dropdown">
+    <button class="floating-action-btn mobile-only" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-plus fa-lg"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-3 mb-2"
+        style="bottom: 80px; right: 16px; position: fixed;">
+        <li><h6 class="dropdown-header text-uppercase fs-xs">Quick Actions</h6></li>
+        <li><a class="dropdown-item py-2 rounded-2" href="{% url 'core:create_sale' %}">
+            <i class="fas fa-shopping-cart me-3 text-success"></i>New Sale</a></li>
+        <li><a class="dropdown-item rounded-2" href="{% url 'core:create_customer' %}">
+            <i class="fas fa-user-plus me-3 text-info"></i>Add Customer</a></li>
+        <li><a class="dropdown-item rounded-2" href="{% url 'core:restock_inventory' %}">
+            <i class="fas fa-boxes me-3 text-warning"></i>Restock Inventory</a></li>
+        <li><a class="dropdown-item rounded-2" href="{% url 'core:sales_list' %}">
+            <i class="fas fa-list-alt me-3 text-primary"></i>Sales History</a></li>
+        {% if user.is_superuser %}
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item rounded-2" href="{% url 'core:currency_settings' %}">
+            <i class="fas fa-cog me-3 text-dark"></i>Settings</a></li>
+        {% endif %}
+    </ul>
+</div>
+
+<!-- Add Product Modal (Superuser) -->
+{% if user.is_superuser %}
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Kudar alaab cusub</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small text-muted fw-bold">MAGACA ALAABTA</label>
+                        <input type="text" class="form-control bg-light border-0" name="name" required placeholder="e.g. Gogol">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted fw-bold">&nbsp;</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_active" checked>
+                                <label class="form-check-label small">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-bold">NOOCA</label>
+                            <input type="text" class="form-control bg-light border-0" name="brand" required placeholder="e.g. gogol adag">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-bold">QAYBTA</label>
+                            <select class="form-select bg-light border-0" name="category" required>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-bold">QIIMAHA LASINYO O (DOLLAR AH)</label>
+                            <input type="number" class="form-control bg-light border-0" name="selling_price" step="0.01" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-bold">LACAGTAD SO SISATAY</label>
+                            <input type="number" class="form-control bg-light border-0" name="purchase_price" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-bold">INTA KUTAALA</label>
+                            <input type="number" class="form-control bg-light border-0" name="current_stock" value="0" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-bold">XADIGA UGU YAR E YALI KARA</label>
+                            <input type="number" class="form-control bg-light border-0" name="low_stock_threshold" value="5" required>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-muted fw-bold">TAFARIQ MISE MITIR</label>
+                            <select class="form-select bg-light border-0" name="selling_unit" id="sellingUnitSelect" required>
+                                <option value="UNIT">TAFARIQ (Whole Numbers)</option>
+                                <option value="METER">MITIRO (Decimal Allowed)</option>
+                            </select>
+                        </div>
+                        <div class="col-6" id="minSaleLengthField" style="display: none;">
+                            <label class="form-label small text-muted fw-bold">MITIRKA UGU YAR ELA IBINKARO (M)</label>
+                            <input type="number" class="form-control bg-light border-0" name="minimum_sale_length" step="0.1" value="1.0" id="minSaleLengthInput">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">kanoqo</button>
+                <button type="button" class="btn btn-primary px-4 rounded-pill" onclick="submitAddProduct()">savegare</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{{ weekly_labels|json_script:"weekly-labels-data" }}
+{{ weekly_data|json_script:"weekly-data-data" }}
+<script>
+function refreshDashboard() {
+    window.location.reload();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Chart Configuration
+    const labelsData = document.getElementById('weekly-labels-data');
+    const weeklyData = document.getElementById('weekly-data-data');
+    
+    if (labelsData && weeklyData) {
+        const labels = JSON.parse(labelsData.textContent);
+        const data = JSON.parse(weeklyData.textContent);
+        const canvas = document.getElementById('weeklyChart');
+        
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(0, 102, 204, 0.2)');
+            gradient.addColorStop(1, 'rgba(0, 102, 204, 0.0)');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Revenue (ETB)',
+                        data: data,
+                        borderColor: '#0066CC',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#FFFFFF',
+                        pointBorderColor: '#0066CC',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1A1A1A',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: { family: 'system-ui', size: 13 },
+                            bodyFont: { family: 'system-ui', size: 13, weight: 'bold' },
+                            displayColors: false,
+                            callbacks: {
+                                label: function (context) {
+                                    return context.parsed.y.toLocaleString() + ' ETB';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#F0F0F0',
+                                borderDash: [5, 5]
+                            },
+                            ticks: {
+                                font: { size: 11 },
+                                color: '#9CA3AF',
+                                callback: function (value) { return value.toLocaleString() + ' ETB'; }
+                            },
+                            border: { display: false }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 11 },
+                                color: '#9CA3AF'
+                            },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    }
+    
+    // Handle Selling Unit dropdown
+    const sellingUnitSelect = document.getElementById('sellingUnitSelect');
+    const minField = document.getElementById('minSaleLengthField');
+    const minInput = document.getElementById('minSaleLengthInput');
+    const stockInput = document.querySelector('input[name="current_stock"]');
+    
+    if (sellingUnitSelect) {
+        sellingUnitSelect.addEventListener('change', function (e) {
+            if (e.target.value === 'METER') {
+                minField.style.display = 'block';
+                minInput.required = true;
+                stockInput.step = '0.01';
+            } else {
+                minField.style.display = 'none';
+                minInput.required = false;
+                minInput.value = '1.0';
+                stockInput.step = '1';
+            }
+        });
+    }
+});
+
+// Add Product Submission Logic
+function submitAddProduct() {
+    const form = document.getElementById('addProductForm');
+    const formData = new FormData(form);
+    
+    fetch("{% url 'core:api_create_product' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const modalEl = document.getElementById('addProductModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+            
+            if (window.showToast) {
+                window.showToast('Product added successfully', 'success');
+            } else {
+                alert('Product added successfully');
+            }
+            
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            if (window.showToast) {
+                window.showToast(data.error || 'Error adding product', 'error');
+            } else {
+                alert(data.error || 'Error adding product');
+            }
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        if (window.showToast) {
+            window.showToast('Network error', 'error');
+        } else {
+            alert('Network error');
+        }
+    });
+}
+</script>
+{% endblock %}

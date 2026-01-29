@@ -1,0 +1,453 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Staff Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ensure all content is visible on mobile */
+    .container-fluid {
+        padding-bottom: 120px !important; /* Extra space for bottom navigation */
+    }
+    
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-bottom: 140px !important;
+        }
+        
+        /* Ensure cards have proper spacing */
+        .card {
+            margin-bottom: 20px !important;
+        }
+        
+        /* Make buttons more prominent */
+        .btn {
+            min-height: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        /* Improve staff list items */
+        .list-group-item {
+            padding: 16px;
+        }
+        
+        /* Better button group layout on mobile */
+        .btn-group-vertical {
+            flex-direction: row;
+            gap: 8px;
+        }
+        
+        /* Hide floating action button on mobile (we have bottom nav) */
+        .position-fixed.bottom-0.end-0 {
+            display: none;
+        }
+        
+        /* Improve modal on mobile */
+        .modal-dialog {
+            margin: 16px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Mobile Header -->
+    <div class="mobile-header mobile-only">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="fas fa-user-cog"></i> Staff</h1>
+            <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Staff Members List -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-users me-2"></i>Staff Members
+        </div>
+        <div class="card-body p-0">
+            {% if staff_members %}
+            <div class="list-group list-group-flush">
+                {% for staff in staff_members %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center">
+                                <div class="fw-bold">{{ staff.get_full_name|default:staff.username }}</div>
+                                {% if staff.is_superuser %}
+                                <span class="badge bg-danger ms-2">Superuser</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-muted">{{ staff.email|default:"No email" }}</div>
+                            <div class="mt-1">
+                                {% if staff.can_sell %}
+                                <span class="badge bg-success me-1">Can Sell</span>
+                                {% endif %}
+                                {% if staff.can_restock %}
+                                <span class="badge bg-info me-1">Can Restock</span>
+                                {% endif %}
+                                {% if not staff.can_sell and not staff.can_restock %}
+                                <span class="badge bg-secondary">No Permissions</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">Created: {{ staff.date_created|date:"M d, Y" }}</small>
+                        </div>
+                        <div class="text-end">
+                            {% if staff.is_active_staff %}
+                            <span class="badge bg-success mb-2">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary mb-2">Inactive</span>
+                            {% endif %}
+                            <div class="btn-group-vertical">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editStaff({{ staff.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% if staff.is_active_staff %}
+                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="deactivateStaff({{ staff.id }})">
+                                    <i class="fas fa-user-slash"></i>
+                                </button>
+                                {% else %}
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="activateStaff({{ staff.id }})">
+                                    <i class="fas fa-user-check"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No staff members found</h5>
+                <p class="text-muted">Start by adding your first staff member.</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+                    <i class="fas fa-plus me-2"></i>Add Staff Member
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1000;">
+        <button type="button" class="btn btn-primary rounded-circle" data-bs-toggle="modal" data-bs-target="#addStaffModal"
+                style="width: 56px; height: 56px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Add Staff Modal -->
+<div class="modal fade" id="addStaffModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>Add New Staff Member
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="addStaffForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small">{{ form.username.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }}</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger small">{{ form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">{{ form.last_name.label }}</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger small">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">{{ form.phone.label }}</label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="text-danger small">{{ form.phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label">{{ form.password1.label }}</label>
+                            {{ form.password1 }}
+                            {% if form.password1.errors %}
+                                <div class="text-danger small">{{ form.password1.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label">{{ form.password2.label }}</label>
+                            {{ form.password2 }}
+                            {% if form.password2.errors %}
+                                <div class="text-danger small">{{ form.password2.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Permissions</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ form.can_sell }}
+                                                <label class="form-check-label" for="{{ form.can_sell.id_for_label }}">
+                                                    {{ form.can_sell.label }}
+                                                </label>
+                                                <small class="form-text text-muted">Allow this staff member to create sales and process transactions</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                {{ form.can_restock }}
+                                                <label class="form-check-label" for="{{ form.can_restock.id_for_label }}">
+                                                    {{ form.can_restock.label }}
+                                                </label>
+                                                <small class="form-text text-muted">Allow this staff member to restock inventory and manage stock</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Add Staff Member
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Staff Modal -->
+<div class="modal fade" id="editStaffModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-edit me-2"></i>Edit Staff Member
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="editStaffForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="staff_id" id="editStaffId">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="edit_username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="edit_username" name="username" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="edit_email" name="email">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="edit_first_name" name="first_name">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="edit_last_name" name="last_name">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_phone" class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="edit_phone" name="phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_password" class="form-label">New Password (optional)</label>
+                            <input type="password" class="form-control" id="edit_password" name="password" placeholder="Leave blank to keep current password">
+                        </div>
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Permissions</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="edit_can_sell" name="can_sell">
+                                                <label class="form-check-label" for="edit_can_sell">
+                                                    Can Sell
+                                                </label>
+                                                <small class="form-text text-muted">Allow this staff member to create sales and process transactions</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="edit_can_restock" name="can_restock">
+                                                <label class="form-check-label" for="edit_can_restock">
+                                                    Can Restock
+                                                </label>
+                                                <small class="form-text text-muted">Allow this staff member to restock inventory and manage stock</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Status</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                                        <label class="form-check-label" for="edit_is_active">
+                                            Active Staff Member
+                                        </label>
+                                        <small class="form-text text-muted">Inactive staff members cannot log in</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Update Staff Member
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form submission handling
+document.getElementById('addStaffForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<div class="spinner"></div>Adding...';
+    submitBtn.disabled = true;
+});
+
+// Edit form submission handling
+document.getElementById('editStaffForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<div class="spinner"></div>Updating...';
+    submitBtn.disabled = true;
+});
+
+// Staff management functions
+function editStaff(staffId) {
+    // Get staff data from the page
+    const staffElement = document.querySelector(`[onclick="editStaff(${staffId})"]`).closest('.list-group-item');
+    const staffName = staffElement.querySelector('.fw-bold').textContent.trim();
+    const staffEmail = staffElement.querySelector('.text-muted').textContent.trim();
+    
+    // Check if staff is active (look for "Active" badge)
+    const activeBadge = staffElement.querySelector('.badge.bg-success');
+    const isActive = activeBadge && activeBadge.textContent.includes('Active');
+    
+    // Check permissions by looking for specific badges
+    const canSell = staffElement.querySelector('.badge.bg-success') && 
+                   Array.from(staffElement.querySelectorAll('.badge')).some(badge => badge.textContent.includes('Can Sell'));
+    const canRestock = staffElement.querySelector('.badge.bg-info') && 
+                      Array.from(staffElement.querySelectorAll('.badge')).some(badge => badge.textContent.includes('Can Restock'));
+    
+    console.log('Staff data:', { staffId, staffName, staffEmail, isActive, canSell, canRestock });
+    
+    // Populate edit form
+    document.getElementById('editStaffId').value = staffId;
+    document.getElementById('edit_username').value = staffName;
+    document.getElementById('edit_email').value = staffEmail;
+    document.getElementById('edit_is_active').checked = isActive;
+    document.getElementById('edit_can_sell').checked = canSell;
+    document.getElementById('edit_can_restock').checked = canRestock;
+    
+    // Show edit modal
+    const editModal = new bootstrap.Modal(document.getElementById('editStaffModal'));
+    editModal.show();
+}
+
+function deactivateStaff(staffId) {
+    if (confirm('Are you sure you want to deactivate this staff member?')) {
+        // Submit form to deactivate staff
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            {% csrf_token %}
+            <input type="hidden" name="action" value="deactivate">
+            <input type="hidden" name="staff_id" value="${staffId}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function activateStaff(staffId) {
+    if (confirm('Are you sure you want to activate this staff member?')) {
+        // Submit form to activate staff
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            {% csrf_token %}
+            <input type="hidden" name="action" value="activate">
+            <input type="hidden" name="staff_id" value="${staffId}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Auto-focus on username field when modal opens
+document.getElementById('addStaffModal').addEventListener('shown.bs.modal', function() {
+    document.getElementById('id_username').focus();
+});
+
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('addStaffForm');
+    const password1 = document.getElementById('id_password1');
+    const password2 = document.getElementById('id_password2');
+    
+    function validatePasswords() {
+        if (password1.value !== password2.value) {
+            password2.setCustomValidity('Passwords do not match');
+        } else {
+            password2.setCustomValidity('');
+        }
+    }
+    
+    password1.addEventListener('input', validatePasswords);
+    password2.addEventListener('input', validatePasswords);
+});
+</script>
+{% endblock %} 

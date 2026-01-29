@@ -1,0 +1,202 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Macmiil Bedel - {{ customer.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Mobile Header -->
+    <div class="mobile-header mobile-only">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="fas fa-user-edit me-2"></i>Macmiil Bedel</h1>
+            <a href="{% url 'core:customer_detail' customer.id %}" class="btn btn-outline-light btn-sm">
+                <i class="fas fa-arrow-left"></i> Ku Noqo
+            </a>
+        </div>
+    </div>
+
+    <!-- Customer Info Card -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-user me-2"></i>Xogaha Macmiilka
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Magaca Hadda:</strong> {{ customer.name }}</p>
+                    <p><strong>Lambarka Hadda:</strong> {{ customer.phone }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Xaalada:</strong> 
+                        {% if customer.is_active %}
+                            <span class="badge bg-success">Hawjeed</span>
+                        {% else %}
+                            <span class="badge bg-danger">Si Hawjeed ah</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Xubin laga bilaabay:</strong> {{ customer.date_created|date:"M d, Y" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-edit me-2"></i>Bedel Faakultiga Macmiilka
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            <i class="fas fa-user me-1"></i>Customer Name *
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.name.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.phone.id_for_label }}" class="form-label">
+                            <i class="fas fa-phone me-1"></i>Phone Number *
+                        </label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.phone.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="form-check">
+                            {{ form.is_active }}
+                            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                <i class="fas fa-check-circle me-1"></i>Customer is active
+                            </label>
+                        </div>
+                        {% if form.is_active.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.is_active.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger mt-3">
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                    <a href="{% url 'core:customer_detail' customer.id %}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Customer Statistics -->
+    <div class="card mt-3">
+        <div class="card-header">
+            <i class="fas fa-chart-bar me-2"></i>Customer Statistics
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h5 class="text-primary">{{ customer.sale_set.count }}</h5>
+                        <small class="text-muted">Total Sales</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h5 class="text-success">${{ customer.total_debt_usd|floatformat:2 }}</h5>
+                        <small class="text-muted">USD Debt</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h5 class="text-warning">{{ customer.total_debt_sos|floatformat:0 }}</h5>
+                        <small class="text-muted">SOS Debt</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h5 class="text-info">
+                            {% if customer.last_purchase_date %}
+                                {{ customer.last_purchase_date|date:"M d" }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </h5>
+                        <small class="text-muted">Last Purchase</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus on name field
+    document.getElementById('{{ form.name.id_for_label }}').focus();
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const name = document.getElementById('{{ form.name.id_for_label }}').value.trim();
+        const phone = document.getElementById('{{ form.phone.id_for_label }}').value.trim();
+        
+        if (!name || !phone) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+            return false;
+        }
+        
+        if (name.length < 2) {
+            e.preventDefault();
+            alert('Customer name must be at least 2 characters long.');
+            return false;
+        }
+    });
+    
+    // Phone number formatting
+    const phoneInput = document.getElementById('{{ form.phone.id_for_label }}');
+    phoneInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 0) {
+            if (value.startsWith('252')) {
+                value = '+' + value;
+            } else if (!value.startsWith('+')) {
+                value = '+252' + value;
+            }
+        }
+        e.target.value = value;
+    });
+});
+</script>
+{% endblock %}

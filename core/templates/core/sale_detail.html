@@ -1,0 +1,280 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Sale {{ sale.transaction_id }} - Vape Shop Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-receipt me-2"></i>Sale Details
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'core:add_sale_item' sale_type sale.id %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add Item
+            </a>
+            <a href="{% url 'core:sales_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Sales
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Sale Information -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Sale Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Transaction ID:</strong><br>
+                    <code>{{ sale.transaction_id }}</code>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Customer:</strong><br>
+                    <span>{{ sale.customer.name }}</span><br>
+                    <small class="text-muted">{{ sale.customer.phone }}</small>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Processed By:</strong><br>
+                    <span>{{ sale.user.get_full_name|default:sale.user.username }}</span>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Date & Time:</strong><br>
+                    <span>{{ sale.date_created|date:"M d, Y" }}</span><br>
+                    <small class="text-muted">{{ sale.date_created|time:"H:i" }}</small>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Sale Type:</strong><br>
+                    <span
+                        class="badge {% if sale_type == 'USD' %}bg-primary{% elif sale_type == 'SOS' %}bg-success{% elif sale_type == 'ETB' %}bg-info{% else %}bg-secondary{% endif %}">
+                        {{ sale_type }} Sale
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Currency:</strong><br>
+                    <span
+                        class="badge {% if sale_type == 'USD' or sale.currency == 'USD' %}bg-primary{% elif sale_type == 'SOS' or sale.currency == 'SOS' %}bg-success{% elif sale_type == 'ETB' %}bg-info{% else %}bg-secondary{% endif %}">
+                        {{ sale_type }}
+                    </span>
+                </div>
+
+                {% if sale_type == 'Legacy' %}
+                <div class="mb-3">
+                    <strong>Exchange Rate:</strong><br>
+                    <span>1 USD = {{ sale.exchange_rate|floatformat:2 }} SOS</span>
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <strong>Status:</strong><br>
+                    {% if sale.is_completed %}
+                    <span class="badge bg-success">Completed</span>
+                    {% else %}
+                    <span class="badge bg-warning">Pending</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Summary -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-credit-card me-2"></i>Payment Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Amount:</span>
+                    <strong>
+                        {% if sale_type == 'USD' or sale.currency == 'USD' %}${% endif %}
+                        {{ sale.total_amount|floatformat:2 }}
+                        {% if sale_type == 'SOS' or sale.currency == 'SOS' %} SOS{% endif %}
+                        {% if sale_type == 'ETB' %} ETB{% endif %}
+                    </strong>
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Amount Paid:</span>
+                    <span>
+                        {% if sale_type == 'USD' or sale.currency == 'USD' %}${% endif %}
+                        {{ sale.amount_paid|floatformat:2 }}
+                        {% if sale_type == 'SOS' or sale.currency == 'SOS' %} SOS{% endif %}
+                        {% if sale_type == 'ETB' %} ETB{% endif %}
+                    </span>
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between">
+                    <span>Outstanding Debt:</span>
+                    {% if sale.debt_amount > 0 %}
+                    <span class="badge bg-danger">
+                        {% if sale_type == 'USD' or sale.currency == 'USD' %}${% endif %}
+                        {{ sale.debt_amount|floatformat:2 }}
+                        {% if sale_type == 'SOS' or sale.currency == 'SOS' %} SOS{% endif %}
+                        {% if sale_type == 'ETB' %} ETB{% endif %}
+                    </span>
+                    {% else %}
+                    <span class="badge bg-success">Paid</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sale Items -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shopping-cart me-2"></i>Sale Items
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if sale.items.all %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Brand</th>
+                                <th>Quantity</th>
+                                <th>Unit Price</th>
+                                <th>Total Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in sale.items.all %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.product.name }}</strong>
+                                </td>
+                                <td>{{ item.product.brand }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ item.quantity }}</span>
+                                </td>
+                                <td>
+                                    {% if sale_type == 'USD' or sale.currency == 'USD' %}${% endif %}
+                                    {{ item.unit_price|floatformat:2 }}
+                                    {% if sale_type == 'SOS' or sale.currency == 'SOS' %} SOS{% endif %}
+                                    {% if sale_type == 'ETB' %} ETB{% endif %}
+                                </td>
+                                <td>
+                                    <strong>
+                                        {% if sale_type == 'USD' or sale.currency == 'USD' %}${% endif %}
+                                        {{ item.total_price|floatformat:2 }}
+                                        {% if sale_type == 'SOS' or sale.currency == 'SOS' %} SOS{% endif %}
+                                        {% if sale_type == 'ETB' %} ETB{% endif %}
+                                    </strong>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                <td>
+                                    <strong>
+                                        {% if sale_type == 'USD' or sale.currency == 'USD' %}${% endif %}
+                                        {{ sale.total_amount|floatformat:2 }}
+                                        {% if sale_type == 'SOS' or sale.currency == 'SOS' %} SOS{% endif %}
+                                        {% if sale_type == 'ETB' %} ETB{% endif %}
+                                    </strong>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No items in this sale</h5>
+                    <p class="text-muted">Add items to complete the sale.</p>
+                    <a href="{% url 'core:add_sale_item' sale_type sale.id %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Item
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Customer Debt Information -->
+        {% if sale.debt_amount > 0 %}
+        <div class="card mt-3">
+            <div class="card-header bg-warning text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Outstanding Debt
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong>Customer:</strong> {{ sale.customer.name }}
+                        </p>
+                        <p class="mb-2">
+                            <strong>Total Debt:</strong>
+                            <span class="badge bg-danger">
+                                {% if sale.currency == 'USD' %}${% endif %}
+                                {{ sale.customer.total_debt|floatformat:2 }}
+                                {% if sale.currency == 'SOS' %} SOS{% endif %}
+                                {% if sale.currency == 'ETB' %} ETB{% endif %}
+                            </span>
+                        </p>
+                    </div>
+                    {% if sale.customer %}
+                    <div class="col-md-6 text-end">
+                        <a href="{% url 'core:record_debt_payment' sale.customer.id %}" class="btn btn-success">
+                            <i class="fas fa-money-bill me-2"></i>Record Payment
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <a href="{% url 'core:add_sale_item' sale_type sale.id %}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-plus me-2"></i>Add Item
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        {% if sale.customer %}
+                        <a href="{% url 'core:customer_detail' sale.customer.id %}"
+                            class="btn btn-outline-info w-100 mb-2">
+                            <i class="fas fa-user me-2"></i>View Customer
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{% url 'core:sales_list' %}" class="btn btn-outline-secondary w-100 mb-2">
+                            <i class="fas fa-list me-2"></i>All Sales
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

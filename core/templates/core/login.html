@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gelid Gaaban - Systemka Maareynta Ganacsiga</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            margin: 1rem auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem 1rem 0 0;
+            text-align: center;
+        }
+
+        .login-body {
+            padding: 2rem;
+            flex: 1;
+        }
+
+        .login-footer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            border-radius: 0 0 1rem 1rem;
+            font-size: 0.875rem;
+            margin-top: auto;
+        }
+
+        .login-footer a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.75rem 2rem;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+
+        .form-control {
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+                <div class="login-card">
+                    <div class="login-header">
+                        <h3><i class="fas fa-store me-2"></i>Carwo Deeqsan</h3>
+                        <p class="mb-0">Systemka Maareynta</p>
+                    </div>
+
+                    <div class="login-body">
+                        {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+
+                        <form method="post">
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label for="id_username" class="form-label">
+                                    <i class="fas fa-user me-2"></i>Magaca Isticmaalaha
+                                </label>
+                                <input type="text" name="username" class="form-control" id="id_username" required>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="id_password" class="form-label">
+                                    <i class="fas fa-lock me-2"></i>Erayga Sirta
+                                </label>
+                                <input type="password" name="password" class="form-control" id="id_password" required>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Gelid Gaaban
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Footer inside the card -->
+                    <div class="login-footer">
+                        <p class="mb-0">
+                            <i class="fas fa-heart text-danger"></i> Made with love by
+                            <a href="https://github.com/mrdahir" target="_blank" rel="noopener noreferrer">
+                                <i class="fab fa-github me-1"></i>TUCK
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

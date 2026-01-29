@@ -1,0 +1,487 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ customer.name }} - Faakultiga Macmiilka{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ensure all content is visible on mobile */
+    .container-fluid {
+        padding-bottom: 120px !important;
+        /* Extra space for bottom navigation */
+    }
+
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-bottom: 140px !important;
+        }
+
+        /* Ensure cards have proper spacing */
+        .card {
+            margin-bottom: 20px !important;
+        }
+
+        /* Make buttons more prominent */
+        .btn {
+            min-height: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* Improve table responsiveness */
+        .table-responsive {
+            font-size: 0.875rem;
+        }
+
+        /* Better spacing for customer info cards */
+        .border.rounded.p-3 {
+            margin-bottom: 12px;
+        }
+
+        /* Improve debug info visibility */
+        .alert-info {
+            font-size: 0.875rem;
+            padding: 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Error Display -->
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Debug Info -->
+<div class="alert alert-info">
+    <strong>Debug Info:</strong>
+    Customer ID: {{ customer.id }},
+    Sales: {{ sales_count }},
+    Payments: {{ payments_count }},
+    Total Spent: ${{ total_spent|floatformat:2 }} USD,
+    Products Bought: {{ total_products_bought }},
+    Current Outstanding Debt: ${{ current_debt|floatformat:2 }} USD
+</div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-user me-2"></i>{{ customer.name }}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            {% if current_debt > 0 %}
+            <a href="{% url 'core:record_debt_payment' customer.id %}" class="btn btn-success">
+                <i class="fas fa-money-bill me-2"></i>Diwangeli deyn
+            </a>
+            {% endif %}
+            {% if user.is_superuser %}
+            <a href="{% url 'core:edit_customer' customer.id %}" class="btn btn-info">
+                <i class="fas fa-user-edit me-2"></i>Macmil bedel
+            </a>
+            <a href="{% url 'core:correct_customer_debt' customer.id %}" class="btn btn-warning">
+                <i class="fas fa-edit me-2"></i>Zax deyn Khaldantay
+            </a>
+            {% endif %}
+            {% if user.is_superuser %}
+            <a href="{% url 'core:debug_customer' customer.id %}" class="btn btn-outline-info btn-sm"
+                title="Debug Info">
+                <i class="fas fa-bug"></i>
+            </a>
+            {% endif %}
+            <a href="{% url 'core:customers_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Kunoqo pageka Macamisha
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Customer Information -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>xogta Macmiilka
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>{{ customer.name }}</h6>
+                <p class="text-muted">{{ customer.phone }}</p>
+
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <div class="border rounded p-3">
+                            <h4 class="text-primary mb-0">{{ sales_count }}</h4>
+                            <small class="text-muted">Total Purchases</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-3 {% if current_debt > 0 %}bg-warning text-white{% endif %}">
+                            <h4 class="mb-0">${{ current_debt|floatformat:2 }}</h4>
+                            <small class="d-block mt-1">
+                                {{ current_debt_sos|floatformat:0 }} SOS<br>
+                                {{ current_debt_etb|floatformat:2 }} ETB
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Customer Statistics -->
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <div class="border rounded p-3 bg-info text-white">
+                            <h4 class="mb-0">{{ total_products_bought }}</h4>
+                            <small>Badecadaha u iibsadey</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-3 bg-success text-white">
+                            <h4 class="mb-0">${{ total_spent|floatformat:2 }}</h4>
+                            <small>Intu lacag ku kharash gareyay meherada (USD)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <div class="border rounded p-3 bg-secondary text-white">
+                            <h4 class="mb-0">${{ total_debt_paid|floatformat:2 }}</h4>
+                            <small>Deyntu bixiyay (USD)</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-3 bg-primary text-white">
+                            <h4 class="mb-0">${{ lifetime_value|floatformat:2 }}</h4>
+                            <small>Noloshisa intu ku kharash gareyay meherada (USD)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between">
+                    <span>Customer Since:</span>
+                    <small class="text-muted">{{ customer.date_created|date:"M d, Y" }}</small>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Iibki ugudambeyay:</span>
+                    <small class="text-muted">
+                        {% if customer.last_purchase_date %}
+                        {{ customer.last_purchase_date|date:"M d, Y" }}
+                        {% else %}
+                        No purchases
+                        {% endif %}
+                    </small>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Firogara:</span>
+                    {% if current_debt > 0 %}
+                    <span class="badge bg-warning">Deynta lagu leeyahay</span>
+                    {% else %}
+                    <span class="badge bg-success">Macmil wanagsan</span>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Payment Frequency:</span>
+                    <span
+                        class="badge {% if payment_frequency == 'Never' %}bg-danger{% elif payment_frequency == 'Weekly' %}bg-success{% elif payment_frequency == 'Monthly' %}bg-warning{% else %}bg-info{% endif %}">
+                        {{ payment_frequency }}
+                    </span>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Total Products:</span>
+                    <strong>{{ total_products_bought }}</strong>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Solalabadka:</span>
+                    {% if customer.is_active %}
+                    <span class="badge bg-success">Imaada</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Ma imaado</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Payments -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>wax iibsigi ugudambeyay
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if payments %}
+                {% for payment in payments|slice:":5" %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>
+                            {% if payment.original_currency == 'USD' %}${% endif %}
+                            {{ payment.original_amount|floatformat:2 }}
+                            {% if payment.original_currency == 'SOS' %} SOS{% endif %}
+                        </strong>
+                        <br>
+                        <small class="text-muted">{{ payment.date_created|date:"M d, Y" }}</small>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">
+                            {% if payment.user %}
+                                {{ payment.user.get_full_name|default:payment.user.username }}
+                            {% else %}
+                                Admin
+                            {% endif %}
+                        </small>
+                        {% if payment.notes %}
+                        <br>
+                        <small class="text-muted">{{ payment.notes|truncatechars:20 }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if not forloop.last %}
+                <hr>{% endif %}
+                {% endfor %}
+
+                <!-- Payment Statistics -->
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h6 class="text-success">${{ total_debt_paid|floatformat:2 }}</h6>
+                        <small class="text-muted">Xadigu bixiyay (USD)</small>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-info">{{ payment_frequency }}</h6>
+                        <small class="text-muted">Joogtaynta</small>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">Waxba ma iibsan</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales History -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shopping-cart me-2"></i>Taarikhda wax iibsiga macmilka
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if sales %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Transaction ID</th>
+                                <th>Badecadaha</th>
+                                <th>Xadiga guudt</th>
+                                <th>Inta lagahayo</th>
+                                <th>Deyn</th>
+                                <th>Shaqalaha</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in sales %}
+                            <tr>
+                                <td>
+                                    <small>{{ sale.date_created|date:"M d, Y" }}</small><br>
+                                    <small class="text-muted">{{ sale.date_created|time:"H:i" }}</small>
+                                </td>
+                                <td>
+                                    <code>{{ sale.transaction_id|truncatechars:8 }}</code>
+                                </td>
+                                <td>
+                                    {% for item in sale.items.all|slice:":2" %}
+                                    <small>{{ item.product.name }} x{{ item.quantity }}</small><br>
+                                    {% endfor %}
+                                    {% if sale.items.count > 2 %}
+                                    <small class="text-muted">+{{ sale.items.count|add:"-2" }} more items</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>
+                                        {% if sale.currency == 'USD' %}${% endif %}
+                                        {{ sale.total_amount|floatformat:2 }}
+                                        {% if sale.currency == 'SOS' %} SOS{% endif %}
+                                        {% if sale.currency == 'ETB' %} ETB{% endif %}
+                                    </strong>
+                                    <br>
+                                    <small class="text-muted">(${{ sale.total_amount_usd|floatformat:2 }} USD)</small>
+                                </td>
+                                <td>
+                                    ${{ sale.amount_paid_usd|floatformat:2 }}
+                                </td>
+                                <td>
+                                    {% if sale.debt_amount_usd > 0 %}
+                                    <span class="badge bg-danger">
+                                        ${{ sale.debt_amount_usd|floatformat:2 }}
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-success">Paid</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>
+                                        {% if sale.user %}
+                                            {{ sale.user.get_full_name|default:sale.user.username }}
+                                        {% else %}
+                                            Admin
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'core:sale_detail' sale.id %}"
+                                        class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Wxba ma iibsiga macmilka</h5>
+                    <p class="text-muted">weli wxba macmilka ma iibsan.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sales Summary -->
+        {% if sales %}
+        <div class="row mt-3">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h4>{{ sales_count }}</h4>
+                        <p class="mb-0">Xadiga iibsiga</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h4>${{ total_spent|floatformat:2 }}</h4>
+                        <p class="mb-0">Total Spent (USD)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <h4>${{ current_debt|floatformat:2 }}</h4>
+                        <p class="mb-0">Deynta lagu leeyahay (USD)</p>
+                        <small>{{ current_debt_etb|floatformat:2 }} ETB</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h4>{{ total_products_bought }}</h4>
+                        <p class="mb-0">Badecadaha u iibsadey</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Activity Summary -->
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>deynta iyo iibsigi macmilka
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h5 class="text-success">${{ total_debt_paid|floatformat:2 }}</h5>
+                                <small class="text-muted">Xadiga bixiyay (USD)</small>
+                            </div>
+                            <div class="col-6">
+                                <h5 class="text-info">{{ payment_frequency }}</h5>
+                                <small class="text-muted">Kuso noqnoqoshada</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h5 class="text-primary">${{ lifetime_value|floatformat:2 }}</h5>
+                                <small class="text-muted">waligi intu bixiyay(USD)</small>
+                            </div>
+                            <div class="col-6">
+                                <h5 class="text-warning">{{ payments_count }}</h5>
+                                <small class="text-muted">Xadiga guud ubixiyay</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Xogta Macmilka
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Phone:</strong><br>
+                                <span class="text-muted">{{ customer.phone }}</span>
+                            </div>
+                            <div class="col-6">
+                                <strong>Mudadu aha customer:</strong><br>
+                                <span class="text-muted">{{ customer.date_created|date:"M d, Y" }}</span>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Wx iibsigi ugudambeyay:</strong><br>
+                                <span class="text-muted">
+                                    {% if customer.last_purchase_date %}
+                                    {{ customer.last_purchase_date|date:"M d, Y" }}
+                                    {% else %}
+                                    No purchases
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="col-6">
+                                <strong>Status:</strong><br>
+                                {% if current_debt > 0 %}
+                                <span class="badge bg-warning">Deynta lagu leeyahay</span>
+                                {% else %}
+                                <span class="badge bg-success">bila deyn</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

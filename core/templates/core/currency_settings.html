@@ -1,0 +1,154 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Xogaha Lacagta - carwoDeeqsan Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-dollar-sign me-2"></i>Xogaha Lacagta
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog me-2"></i>Hagaajinta Siciirka Sarifka
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.usd_to_sos_rate|as_crispy_field }}
+                            {{ form.usd_to_etb_rate|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Siciirka Sarifka Hadda</label>
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text">1 USD =</span>
+                                    <input type="text" class="form-control" value="{{ currency_settings.usd_to_sos_rate|floatformat:2 }}" readonly>
+                                    <span class="input-group-text">SOS</span>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text">1 SOS =</span>
+                                    <input type="text" class="form-control" value="{{ currency_settings.sos_to_usd_rate|floatformat:6 }}" readonly>
+                                    <span class="input-group-text">USD</span>
+                                </div>
+                                <div class="input-group mb-2 mt-3">
+                                    <span class="input-group-text">1 USD =</span>
+                                    <input type="text" class="form-control" value="{{ currency_settings.usd_to_etb_rate|floatformat:2 }}" readonly>
+                                    <span class="input-group-text">ETB</span>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text">1 ETB =</span>
+                                    <input type="text" class="form-control" value="{{ currency_settings.etb_to_usd_rate|floatformat:6 }}" readonly>
+                                    <span class="input-group-text">USD</span>
+                                </div>
+                                <small class="form-text text-muted">Hadii la soo celiyay: {{ currency_settings.date_updated|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Siciirka Sarifka Cusboonaysi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Sicirka suuqu halku marayo manta
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Lacagta la ogolyahay</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>US Dollar (USD)</span>
+                        <span class="badge bg-primary">Primary</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Somaliland Shilling (SOS)</span>
+                        <span class="badge bg-success">Local</span>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Ethiopian Birr (ETB)</span>
+                        <span class="badge bg-info">Regional</span>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <h6>saamaynta sicirku kuleeyahay systemkan</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-chart-line text-success me-2"></i>
+                            wuxu samaynaya dhaman lacagta shillingka e somaliland
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-calculator text-info me-2"></i>
+                            waxan u isticmaalidoona xadigan report kena
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-file-invoice text-warning me-2"></i>
+                            report kastana wanka dhex arki doona
+                        </li>
+                        <li>
+                            <i class="fas fa-history text-secondary me-2"></i>
+                            bedelkasta od samayso hadhaw systemka walaga dhex helaya
+                        </li>
+                    </ul>
+                </div>
+                
+                <hr>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>FG:</strong> isudey inad update gareyso maalinwalba.
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Tixraaci udambeyay
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <span>Gacanta danbe</span>
+                    <strong>1 USD = {{ currency_settings.usd_to_sos_rate|floatformat:2 }} SOS</strong>
+                </div>
+                <div class="d-flex justify-content-between mt-1">
+                    <span>Gacanta danbe (ETB)</span>
+                    <strong>1 USD = {{ currency_settings.usd_to_etb_rate|floatformat:2 }} ETB</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>wakhtigi ugu dambeyay ela update gareyay</span>
+                    <small class="text-muted">{{ currency_settings.date_updated|date:"M d, Y" }}</small>
+                </div>
+                {% if currency_settings.updated_by %}
+                <div class="d-flex justify-content-between">
+                    <span>cidda update gareysay</span>
+                    <small class="text-muted">{{ currency_settings.updated_by.get_full_name|default:currency_settings.updated_by.username }}</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

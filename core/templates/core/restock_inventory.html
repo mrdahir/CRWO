@@ -1,0 +1,686 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Cusbo Kaydka
+{% include 'core/_inventory_editing.html' %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ensure all content is visible on mobile */
+    .container-fluid {
+        padding-bottom: 120px !important;
+        /* Extra space for bottom navigation */
+    }
+
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-bottom: 140px !important;
+        }
+
+        /* Ensure cards have proper spacing */
+        .card {
+            margin-bottom: 20px !important;
+        }
+
+        /* Make buttons more prominent */
+        .btn {
+            min-height: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* Improve search bar */
+        .search-bar {
+            margin-bottom: 20px;
+        }
+
+        /* Better spacing for product cards */
+        .product-card {
+            margin-bottom: 16px;
+        }
+
+        /* Better card body spacing */
+        .card-body {
+            padding: 16px !important;
+        }
+
+        /* Improve list group items */
+        .list-group-item {
+            padding: 16px !important;
+            min-height: 60px !important;
+        }
+    }
+
+    /* Device-specific optimizations */
+    @media (width: 384px) {
+        .card-body {
+            padding: 12px !important;
+        }
+
+        .btn {
+            min-height: 44px !important;
+            font-size: 0.9rem !important;
+        }
+
+        .list-group-item {
+            padding: 12px !important;
+            min-height: 56px !important;
+        }
+
+        .search-bar {
+            margin-bottom: 16px !important;
+        }
+    }
+
+    @media (width: 393px) {
+        .card-body {
+            padding: 14px !important;
+        }
+
+        .btn {
+            min-height: 46px !important;
+            font-size: 0.95rem !important;
+        }
+
+        .list-group-item {
+            padding: 14px !important;
+            min-height: 58px !important;
+        }
+
+        .search-bar {
+            margin-bottom: 18px !important;
+        }
+    }
+</style>
+
+{% include 'core/_inventory_editing.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Mobile Header -->
+    <div class="mobile-header mobile-only">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="fas fa-boxes"></i> Cusbo Kaydka</h1>
+            <a href="{% url 'core:inventory_list' %}" class="btn btn-outline-light btn-sm">
+                <i class="fas fa-list"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-bar">
+        <i class="fas fa-search text-muted me-2"></i>
+        <div class="input-group">
+            <input type="text" id="productSearch" class="form-control" placeholder="Search products to restock..."
+                autocomplete="off">
+        </div>
+    </div>
+
+    <!-- Low Stock Alert -->
+    {% if low_stock_products %}
+    <div class="card">
+        <div class="card-header bg-warning text-dark">
+            <i class="fas fa-exclamation-triangle me-2"></i>Low Stock Items
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for product in low_stock_products %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ product.name }}</div>
+                            <div class="text-muted">{{ product.brand }} • {{ product.category }}</div>
+                            <small class="text-danger">Current: {{ product.current_stock }} (Threshold: {{
+                                product.low_stock_threshold }})</small>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary quick-restock-btn"
+                            data-product-id="{{ product.id }}" data-product-name="{{ product.name|escapejs }}"
+                            data-current-stock="{{ product.current_stock }}">
+                            <i class="fas fa-plus"></i> Restock
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Product Results -->
+    <div id="productResults" class="mt-3">
+        <!-- Products will be populated here -->
+    </div>
+
+    <!-- Restock Modal -->
+    <div class="modal fade" id="restockModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Restock Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="restockForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="productId" name="product_id">
+
+                        <div class="mb-3">
+                            <label class="form-label">Product</label>
+                            <div class="form-control-plaintext" id="productName"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Current Stock</label>
+                            <div class="form-control-plaintext" id="currentStock"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Quantity to Add</label>
+                            <div class="input-group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="adjustQuantity(-1)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input type="number" class="form-control text-center" id="quantityInput" name="quantity"
+                                    value="1" min="0.01" step="0.01" required>
+                                <button type="button" class="btn btn-outline-secondary" onclick="adjustQuantity(1)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">New Stock Level</label>
+                            <div class="form-control-plaintext fw-bold" id="newStockLevel"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" name="notes" rows="2"
+                                placeholder="e.g., New shipment, Returned items, etc."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitRestock()">
+                        <i class="fas fa-save me-2"></i>Update Stock
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% include 'core/_inventory_editing.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentQuantity = 1;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function () {
+        setupProductSearch();
+        loadAllProducts();
+
+        // Set up quick restock buttons
+        document.querySelectorAll('.quick-restock-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const productId = parseInt(this.getAttribute('data-product-id'));
+                const productName = this.getAttribute('data-product-name');
+                const currentStock = parseFloat(this.getAttribute('data-current-stock'));
+                quickRestock(productId, productName, currentStock);
+            });
+        });
+
+        // Auto-focus on search
+        document.getElementById('productSearch').focus();
+    });
+
+    function setupProductSearch() {
+        const searchInput = document.getElementById('productSearch');
+
+        searchInput.addEventListener('input', function () {
+            const query = this.value.trim();
+            if (query.length < 2) {
+                loadAllProducts();
+            } else {
+                searchProducts(query);
+            }
+        });
+    }
+
+    function loadAllProducts() {
+        fetch('{% url "core:api_search_products" %}?q=')
+            .then(response => response.json())
+            .then(data => {
+                displayProducts(data);
+            })
+            .catch(error => {
+                console.error('Error loading products:', error);
+                showToast('Error loading products', 'error');
+            });
+    }
+
+    function searchProducts(query) {
+        fetch(`{% url "core:api_search_products" %}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                displayProducts(data);
+            })
+            .catch(error => {
+                console.error('Error searching products:', error);
+                showToast('Error searching products', 'error');
+            });
+    }
+
+    function displayProducts(products) {
+        const container = document.getElementById('productResults');
+
+        if (products.length === 0) {
+            container.innerHTML = '<div class="text-muted text-center py-5">No products found</div>';
+            return;
+        }
+
+        container.innerHTML = products.map(product => `
+        <div class="card mb-2">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">${product.name}</div>
+                        <div class="text-muted">${product.brand} • ${product.category}</div>
+                        <div class="mt-1">
+                            <span class="badge ${product.current_stock <= product.low_stock_threshold ? 'bg-danger' : 'bg-success'}">
+                                Stock: ${product.current_stock}
+                            </span>
+                            ${product.current_stock <= product.low_stock_threshold ?
+                `<span class="badge bg-warning ms-1">Low Stock</span>` : ''}
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary" 
+                            onclick="openRestockModal(${product.id}, '${product.name}', ${product.current_stock})">
+                        <i class="fas fa-plus"></i> Restock
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    }
+
+    function quickRestock(productId, productName, currentStock) {
+        openRestockModal(productId, productName, currentStock);
+    }
+
+    function openRestockModal(productId, productName, currentStock) {
+        document.getElementById('productId').value = productId;
+        document.getElementById('productName').textContent = productName;
+        document.getElementById('currentStock').textContent = currentStock;
+        document.getElementById('quantityInput').value = 1;
+        currentQuantity = 1;
+        updateNewStockLevel(currentStock, 1);
+
+        const modal = new bootstrap.Modal(document.getElementById('restockModal'));
+        modal.show();
+
+        // Focus on quantity input
+        setTimeout(() => {
+            document.getElementById('quantityInput').focus();
+        }, 500);
+    }
+
+    function adjustQuantity(change) {
+        const input = document.getElementById('quantityInput');
+        const newValue = Math.max(0.01, parseFloat(input.value) + change);
+        input.value = parseFloat(newValue.toFixed(2));
+        currentQuantity = newValue;
+
+        const currentStock = parseFloat(document.getElementById('currentStock').textContent);
+        updateNewStockLevel(currentStock, newValue);
+    }
+
+    function updateNewStockLevel(currentStock, quantity) {
+        const newLevel = currentStock + quantity;
+        document.getElementById('newStockLevel').textContent = newLevel;
+    }
+
+    // Handle quantity input changes
+    document.addEventListener('input', function (e) {
+        if (e.target.id === 'quantityInput') {
+            const quantity = parseFloat(e.target.value) || 0;
+            const currentStock = parseFloat(document.getElementById('currentStock').textContent);
+            updateNewStockLevel(currentStock, quantity);
+            currentQuantity = quantity;
+        }
+    });
+
+    function submitRestock() {
+        const form = document.getElementById('restockForm');
+        const formData = new FormData(form);
+
+        // Validate quantity
+        const quantity = parseFloat(formData.get('quantity'));
+        if (quantity <= 0) {
+            showToast('Quantity must be greater than 0', 'error');
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = document.querySelector('#restockModal .btn-primary');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<div class="spinner"></div>Updating...';
+        submitBtn.disabled = true;
+
+        fetch('{% url "core:restock_inventory" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Stock updated successfully', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('restockModal')).hide();
+
+                    // Refresh the product list
+                    const searchQuery = document.getElementById('productSearch').value.trim();
+                    if (searchQuery.length >= 2) {
+                        searchProducts(searchQuery);
+                    } else {
+                        loadAllProducts();
+                    }
+
+                    // Refresh low stock section if it exists
+                    if (document.querySelector('.card-header.bg-warning')) {
+                        location.reload();
+                    }
+                } else {
+                    showToast(data.error || 'Error updating stock', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating stock:', error);
+                showToast('Error updating stock', 'error');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+    }
+
+    // Keyboard shortcuts for modal
+    document.addEventListener('keydown', function (e) {
+        const modal = document.getElementById('restockModal');
+        if (modal.classList.contains('show')) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                submitRestock();
+            } else if (e.key === 'Escape') {
+                bootstrap.Modal.getInstance(modal).hide();
+            }
+        }
+    });
+
+    // Add CSRF token to page
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) {
+        const token = document.createElement('input');
+        token.type = 'hidden';
+        token.name = 'csrfmiddlewaretoken';
+        token.value = '{{ csrf_token }}';
+        document.body.appendChild(token);
+    }
+
+    // Toast notification function
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type} position-fixed top-0 end-0 m-3`;
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '300px';
+        toast.innerHTML = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 3000);
+    }
+
+    // ======================================
+    // EDIT PRODUCT FUNCTIONALITY
+    // ======================================
+
+    // Currency conversion rates
+    const usdToSosRate = parseFloat('{{ currency_settings.usd_to_sos_rate|default:"8000" }}') || 8000;
+    const usdToEtbRate = parseFloat('{{ currency_settings.usd_to_etb_rate|default:"100" }}') || 100;
+    let isUpdatingEditPrices = false;
+
+    function setupEditPriceConversion() {
+        const usdInput = document.getElementById('editPriceUSD');
+        const sosInput = document.getElementById('editPriceSOS');
+        const etbInput = document.getElementById('editPriceETB');
+
+        if (!usdInput || !sosInput || !etbInput) return;
+
+        // Clone to remove old listeners
+        const newUsd = usdInput.cloneNode(true);
+        const newSos = sosInput.cloneNode(true);
+        const newEtb = etbInput.cloneNode(true);
+        usdInput.replaceWith(newUsd);
+        sosInput.replaceWith(newSos);
+        etbInput.replaceWith(newEtb);
+
+        newUsd.addEventListener('input', function () {
+            if (isUpdatingEditPrices) return;
+            isUpdatingEditPrices = true;
+            const val = parseFloat(this.value) || 0;
+            newSos.value = (val * usdToSosRate).toFixed(2);
+            newEtb.value = (val * usdToEtbRate).toFixed(2);
+            isUpdatingEditPrices = false;
+        });
+
+        newSos.addEventListener('input', function () {
+            if (isUpdatingEditPrices) return;
+            isUpdatingEditPrices = true;
+            const val = parseFloat(this.value) || 0;
+            const usd = val / usdToSosRate;
+            newUsd.value = usd.toFixed(2);
+            newEtb.value = (usd * usdToEtbRate).toFixed(2);
+            isUpdatingEditPrices = false;
+        });
+
+        newEtb.addEventListener('input', function () {
+            if (isUpdatingEditPrices) return;
+            isUpdatingEditPrices = true;
+            const val = parseFloat(this.value) || 0;
+            const usd = val / usdToEtbRate;
+            newUsd.value = usd.toFixed(2);
+            newSos.value = (usd * usdToSosRate).toFixed(2);
+            isUpdatingEditPrices = false;
+        });
+    }
+
+    function openEditModal(productId, productName, purchasePrice, priceUSD, priceSOS, priceETB) {
+        document.getElementById('editProductId').value = productId;
+        document.getElementById('editProductName').value = productName;
+        document.getElementById('editPurchasePrice').value = purchasePrice;
+        document.getElementById('editPriceUSD').value = priceUSD;
+        document.getElementById('editPriceSOS').value = priceSOS;
+        document.getElementById('editPriceETB').value = priceETB;
+
+        const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+        modal.show();
+
+        setTimeout(() => setupEditPriceConversion(), 100);
+    }
+
+    function submitEdit() {
+        const productId = document.getElementById('editProductId').value;
+        const formData = new FormData(document.getElementById('editProductForm'));
+
+        const submitBtn = document.querySelector('#editProductModal .btn-primary');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        submitBtn.disabled = true;
+
+        fetch(`/api/product/${productId}/update/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
+                    loadAllProducts();  // Reload the product list
+                } else {
+                    showToast(data.error || 'Failed to update product', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating product:', error);
+                showToast('Error updating product', 'error');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+    }
+
+    // ======================================
+    // DELETE PRODUCT FUNCTIONALITY
+    // ======================================
+
+    function confirmDelete(productId, productName) {
+        document.getElementById('deleteProductId').value = productId;
+        document.getElementById('deleteProductName').textContent = productName;
+
+        const modal = new bootstrap.Modal(document.getElementById('deleteProductModal'));
+        modal.show();
+    }
+
+    function submitDelete() {
+        const productId = document.getElementById('deleteProductId').value;
+        const productName = document.getElementById('deleteProductName').textContent;
+
+        const submitBtn = document.querySelector('#deleteProductModal .btn-danger');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        submitBtn.disabled = true;
+
+        fetch(`/api/product/${productId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('deleteProductModal')).hide();
+                    loadAllProducts();  // Reload the product list
+                } else {
+                    showToast(data.error || 'Failed to delete product', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting product:', error);
+                showToast('Error deleting product', 'error');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+    }
+</script>
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editProductForm">
+                {% csrf_token %}
+                <input type="hidden" id="editProductId" name="product_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Product Name <span class="text-danger">*</span></label>
+                        <input type="text" id="editProductName" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Purchase Price</label>
+                        <input type="number" id="editPurchasePrice" name="purchase_price" class="form-control"
+                            step="0.01" min="0">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Price (USD)</label>
+                            <input type="number" id="editPriceUSD" name="selling_price_usd" class="form-control"
+                                step="0.01" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Price (SOS)</label>
+                            <input type="number" id="editPriceSOS" name="selling_price_sos" class="form-control"
+                                step="1" min="0">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Price (ETB)</label>
+                            <input type="number" id="editPriceETB" name="selling_price_etb" class="form-control"
+                                step="0.01" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEdit()">
+                        <i class="fas fa-save me-2"></i>Update Product
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="deleteProductId">
+                <p class="mb-0">Are you sure you want to delete <strong id="deleteProductName"></strong>?</p>
+                <div class="alert alert-warning mt-3 mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    This action cannot be undone. Products that have been used in sales cannot be deleted.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="submitDelete()">
+                    <i class="fas fa-trash me-2"></i>Delete Product
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'core/_inventory_editing.html' %}
+{% endblock %}

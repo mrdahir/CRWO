@@ -1,0 +1,367 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Macmiisha{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ensure all content is visible on mobile */
+    .container-fluid {
+        padding-bottom: 120px !important; /* Extra space for bottom navigation */
+    }
+    
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-bottom: 140px !important;
+        }
+        
+        /* Ensure cards have proper spacing */
+        .card {
+            margin-bottom: 20px !important;
+        }
+        
+        /* Make buttons more prominent */
+        .btn {
+            min-height: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        /* Improve customer cards */
+        .customer-card {
+            margin-bottom: 16px;
+        }
+        
+        /* Better spacing for summary cards */
+        .card-body.p-2 {
+            padding: 16px !important;
+        }
+        
+        /* Improve search bar */
+        .search-bar {
+            margin-bottom: 20px;
+        }
+        
+        /* Better list group items */
+        .list-group-item {
+            padding: 16px !important;
+            min-height: 60px !important;
+        }
+        
+        /* Floating action button */
+        .position-fixed.bottom-0.end-0 {
+            bottom: 100px !important;
+        }
+    }
+    
+    /* Device-specific optimizations */
+    @media (width: 384px) {
+        .card-body.p-2 {
+            padding: 12px !important;
+        }
+        
+        .btn {
+            min-height: 44px !important;
+            font-size: 0.9rem !important;
+        }
+        
+        .list-group-item {
+            padding: 12px !important;
+            min-height: 56px !important;
+        }
+        
+        .search-bar {
+            margin-bottom: 16px !important;
+        }
+        
+        .position-fixed.bottom-0.end-0 {
+            bottom: 90px !important;
+        }
+    }
+    
+    @media (width: 393px) {
+        .card-body.p-2 {
+            padding: 14px !important;
+        }
+        
+        .btn {
+            min-height: 46px !important;
+            font-size: 0.95rem !important;
+        }
+        
+        .list-group-item {
+            padding: 14px !important;
+            min-height: 58px !important;
+        }
+        
+        .search-bar {
+            margin-bottom: 18px !important;
+        }
+        
+        .position-fixed.bottom-0.end-0 {
+            bottom: 95px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Mobile Header -->
+    <div class="mobile-header mobile-only">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="fas fa-users"></i> Macmiisha</h1>
+            <a href="{% url 'core:create_customer' %}" class="btn btn-outline-light btn-sm">
+                <i class="fas fa-plus"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Search and Filter Bar -->
+    <div class="search-bar">
+        <div class="row g-2">
+            <div class="col-8">
+                <div class="input-group">
+                    <i class="fas fa-search text-muted me-2"></i>
+                    <input type="text" id="customerSearch" class="form-control" 
+                           placeholder="Raadi macmiilka..." autocomplete="off">
+                </div>
+            </div>
+            <div class="col-4">
+                <select class="form-select" id="debtFilter">
+                    <option value="">Dhammu</option>
+                    <option value="has_debt">Dayn Leh</option>
+                    <option value="no_debt">Dayn Lama Leh</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-2 mb-3">
+        <div class="col-4">
+            <div class="card text-center">
+                <div class="card-body p-2">
+                    <h6 class="mb-0 text-primary">{{ total_customers }}</h6>
+                    <small class="text-muted">Wadarta</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card text-center">
+                <div class="card-body p-2">
+                    <h6 class="mb-0 text-danger">{{ customers_with_debt }}</h6>
+                    <small class="text-muted">Dayn Leh</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card text-center">
+                <div class="card-body p-2">
+                    <h6 class="mb-0 text-success">${{ total_debt|floatformat:0 }}</h6>
+                    <small class="text-muted">Wadarta Daynka</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers List -->
+    <div id="customersList">
+        {% if customers %}
+        <div class="list-group">
+            {% for customer in customers %}
+            <a href="{% url 'core:customer_detail' customer.id %}" class="list-group-item list-group-item-action text-decoration-none">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center">
+                            <div class="fw-bold">{{ customer.name }}</div>
+                            {% if customer.total_debt > 0 %}
+                            <span class="badge bg-danger ms-2">${{ customer.total_debt|floatformat:2 }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted">{{ customer.phone }}</div>
+                        <div class="text-muted">
+                            Iibso ugu dhowaan: {{ customer.last_purchase_date|date:"M d, Y"|default:"Marna" }}
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-muted">
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if customers.has_other_pages %}
+        <nav class="mt-3">
+            <ul class="pagination justify-content-center">
+                {% if customers.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ customers.previous_page_number }}&search={{ request.GET.search }}&debt_filter={{ request.GET.debt_filter }}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in customers.paginator.page_range %}
+                    {% if customers.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > customers.number|add:'-3' and num < customers.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&search={{ request.GET.search }}&debt_filter={{ request.GET.debt_filter }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if customers.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ customers.next_page_number }}&search={{ request.GET.search }}&debt_filter={{ request.GET.debt_filter }}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No customers found</h5>
+            <p class="text-muted">Try adjusting your search or filters</p>
+            <a href="{% url 'core:create_customer' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add First Customer
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1000;">
+        <a href="{% url 'core:create_customer' %}" class="btn btn-primary rounded-circle" 
+           style="width: 56px; height: 56px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <i class="fas fa-plus"></i>
+        </a>
+    </div>
+</div>
+
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    setupSearch();
+    setupFilters();
+    
+    // Auto-focus on search
+    document.getElementById('customerSearch').focus();
+});
+
+function setupSearch() {
+    const searchInput = document.getElementById('customerSearch');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            performSearch();
+        }, 300);
+    });
+}
+
+function setupFilters() {
+    const debtFilter = document.getElementById('debtFilter');
+    debtFilter.addEventListener('change', function() {
+        performSearch();
+    });
+}
+
+function performSearch() {
+    const searchQuery = document.getElementById('customerSearch').value.trim();
+    const debtFilter = document.getElementById('debtFilter').value;
+    
+    const params = new URLSearchParams();
+    if (searchQuery) params.append('search', searchQuery);
+    if (debtFilter) params.append('debt_filter', debtFilter);
+    
+    const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    
+    // Show loading state
+    const customersList = document.getElementById('customersList');
+    customersList.innerHTML = '<div class="loading"><div class="spinner"></div>Loading customers...</div>';
+    
+    // Fetch updated results
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            // Extract the customers list from the response
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newCustomersList = doc.getElementById('customersList');
+            
+            if (newCustomersList) {
+                customersList.innerHTML = newCustomersList.innerHTML;
+            }
+        })
+        .catch(error => {
+            console.error('Error searching customers:', error);
+            showToast('Error searching customers', 'error');
+        });
+}
+
+
+
+
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        document.getElementById('customerSearch').focus();
+    }
+});
+
+// Pull to refresh
+let startY = 0;
+let currentY = 0;
+let pullDistance = 0;
+const pullThreshold = 80;
+
+document.addEventListener('touchstart', function(e) {
+    if (window.scrollY === 0) {
+        startY = e.touches[0].clientY;
+    }
+});
+
+document.addEventListener('touchmove', function(e) {
+    if (window.scrollY === 0) {
+        currentY = e.touches[0].clientY;
+        pullDistance = currentY - startY;
+        
+        if (pullDistance > 0 && pullDistance < pullThreshold) {
+            document.body.style.transform = `translateY(${pullDistance * 0.3}px)`;
+        }
+    }
+});
+
+document.addEventListener('touchend', function() {
+    if (pullDistance > pullThreshold) {
+        location.reload();
+    }
+    
+    document.body.style.transform = '';
+    pullDistance = 0;
+});
+</script>
+{% endblock %} 

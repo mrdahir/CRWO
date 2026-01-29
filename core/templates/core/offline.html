@@ -1,0 +1,24 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Offline - Carwo Deeqsan{% endblock %}
+
+{% block content %}
+<div class="container h-100 d-flex flex-column justify-content-center align-items-center text-center mt-5 pt-5">
+    <div class="mb-4">
+        <i class="fas fa-wifi text-secondary fa-5x opacity-50"></i>
+    </div>
+    <h2 class="mb-3 fw-bold">Hadda waxaad offline tahay</h2>
+    <p class="text-secondary mb-4 col-md-6 mx-auto">
+        Waxaa jiraafadda ku jirtay xiriirka internet-ka.
+        Halkaa ha aandega, qaybaha app-ka badankooda waxay hadii hore u booqdo ay hada bilowba heli karin.
+    </p>
+    <div>
+        <a href="{% url 'core:dashboard' %}" class="btn btn-primary px-4 py-2 me-2">
+            <i class="fas fa-home me-2"></i> Dahaarka U Cel
+        </a>
+        <button onclick="window.location.reload()" class="btn btn-outline-secondary px-4 py-2">
+            <i class="fas fa-sync-alt me-2"></i> Mar Kale Isku Day
+        </button>
+    </div>
+</div>
+{% endblock %}

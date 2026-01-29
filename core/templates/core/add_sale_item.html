@@ -1,0 +1,359 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add Item to Sale - Carwo Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-plus me-2"></i>Add Item to Sale
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'core:sale_detail' sale.currency sale.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Sale
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shopping-cart me-2"></i>Add Product
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-end mb-3">
+                    <button type="button" class="btn btn-outline-primary" onclick="openScannerForSale()">
+                        <i class="fas fa-camera me-2"></i>Scan Barcode
+                    </button>
+                </div>
+                <form method="post" id="itemForm">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ item_form.product|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ item_form.quantity|as_crispy_field }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ item_form.unit_price|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Total Price</label>
+                                <input type="text" class="form-control" id="totalPrice" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'core:sale_detail' sale.currency sale.id %}"
+                            class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Sale Information -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Sale Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Transaction ID:</strong><br>
+                    <code>{{ sale.transaction_id }}</code>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Customer:</strong><br>
+                    <span>{{ sale.customer.name }}</span>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Currency:</strong><br>
+                    <span class="badge {% if sale.currency == 'USD' %}bg-primary{% else %}bg-success{% endif %}">
+                        {{ sale.currency }}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Current Total:</strong><br>
+                    <span class="h5">
+                        {% if sale.currency == 'USD' %}${% endif %}
+                        {{ sale.total_amount|floatformat:2 }}
+                        {% if sale.currency == 'SOS' %} SOS{% endif %}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Items:</strong><br>
+                    <span class="badge bg-info">{{ sale.items.count }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Information -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-box me-2"></i>Product Information
+                </h5>
+            </div>
+            <div class="card-body" id="productInfo">
+                <p class="text-muted text-center">Select a product to view details</p>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Select product from dropdown
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Quantity cannot exceed stock
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Unit price auto-fills
+                    </li>
+                    <li>
+                        <i class="fas fa-check text-success me-2"></i>
+                        Total calculates automatically
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ZXing scanner setup
+    let saleScannerReader = null;
+    let saleScannerControls = null;
+
+    function openScannerForSale() {
+        const modalEl = document.getElementById('barcodeScannerModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+        setTimeout(startSaleScanner, 300);
+    }
+
+    function startSaleScanner() {
+        const videoEl = document.getElementById('barcodeVideo');
+        if (!window.ZXing) {
+            console.error('ZXing not loaded');
+            return;
+        }
+        if (saleScannerReader) {
+            stopSaleScanner();
+        }
+        saleScannerReader = new ZXing.BrowserMultiFormatReader();
+        saleScannerReader
+            .listVideoInputDevices()
+            .then(devices => {
+                const deviceId = devices.length > 0 ? devices[0].deviceId : null;
+                if (!deviceId) {
+                    console.error('No camera found');
+                    return;
+                }
+                saleScannerReader.decodeFromVideoDevice(deviceId, videoEl, (result, err) => {
+                    if (result) {
+                        onSaleBarcodeScanned(result.getText());
+                    }
+                });
+            })
+            .catch(err => console.error(err));
+    }
+
+    function stopSaleScanner() {
+        try {
+            if (saleScannerReader) {
+                saleScannerReader.reset();
+            }
+        } catch (e) { console.warn(e); }
+    }
+
+    document.addEventListener('hidden.bs.modal', function (event) {
+        if (event.target && event.target.id === 'barcodeScannerModal') {
+            stopSaleScanner();
+        }
+    });
+
+    function onSaleBarcodeScanned(code) {
+        stopSaleScanner();
+        bootstrap.Modal.getInstance(document.getElementById('barcodeScannerModal')).hide();
+        fetch(`{% url 'core:api_lookup_by_barcode' %}?barcode=${encodeURIComponent(code)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const productId = data.product.id;
+                    const select = document.getElementById('id_product');
+                    if (select) {
+                        select.value = String(productId);
+                        // Trigger change to load product info and price
+                        const evt = new Event('change');
+                        select.dispatchEvent(evt);
+                    }
+                    // Optionally focus quantity
+                    const qty = document.getElementById('id_quantity');
+                    if (qty) qty.focus();
+                } else {
+                    alert(data.error || 'Product not found');
+                }
+            })
+            .catch(() => alert('Failed to look up product by barcode'));
+    }
+
+    // Auto-calculate total price
+    function calculateTotal() {
+        const quantity = document.getElementById('id_quantity').value;
+        const unitPrice = document.getElementById('id_unit_price').value;
+        const totalPrice = document.getElementById('totalPrice');
+
+        if (quantity && unitPrice) {
+            const total = (parseFloat(quantity) * parseFloat(unitPrice)).toFixed(2);
+            totalPrice.value = total;
+        } else {
+            totalPrice.value = '';
+        }
+    }
+
+    // Update product information when product is selected
+    function updateProductInfo() {
+        const productSelect = document.getElementById('id_product');
+        const productInfo = document.getElementById('productInfo');
+
+        if (productSelect.value) {
+            fetch(`{% url 'core:api_get_product_details' 0 %}`.replace('0', productSelect.value))
+                .then(response => response.json())
+                .then(data => {
+                    productInfo.innerHTML = `
+                    <h6>${data.name}</h6>
+                    <p class="text-muted">${data.brand}</p>
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <h6 class="mb-0">${data.stock}</h6>
+                                <small class="text-muted">Available</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2">
+                                <h6 class="mb-0">$${data.price}</h6>
+                                <small class="text-muted">Price</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between">
+                        <span>Status:</span>
+                        <span class="badge ${data.stock > 0 ? 'bg-success' : 'bg-danger'}">
+                            ${data.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                        </span>
+                    </div>
+                `;
+
+                    // Auto-fill unit price
+                    document.getElementById('id_unit_price').value = data.price;
+                    calculateTotal();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    productInfo.innerHTML = '<p class="text-danger">Error loading product information</p>';
+                });
+        } else {
+            productInfo.innerHTML = '<p class="text-muted text-center">Select a product to view details</p>';
+        }
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function () {
+        const quantityInput = document.getElementById('id_quantity');
+        const unitPriceInput = document.getElementById('id_unit_price');
+        const productSelect = document.getElementById('id_product');
+
+        quantityInput.addEventListener('input', calculateTotal);
+        unitPriceInput.addEventListener('input', calculateTotal);
+        productSelect.addEventListener('change', updateProductInfo);
+
+        // Initialize if product is pre-selected
+        if (productSelect.value) {
+            updateProductInfo();
+        }
+    });
+
+    // Stock validation
+    document.getElementById('id_quantity').addEventListener('input', function () {
+        const quantity = parseFloat(this.value);
+        const productSelect = document.getElementById('id_product');
+
+        if (productSelect.value && quantity > 0) {
+            fetch(`{% url 'core:api_get_product_details' 0 %}`.replace('0', productSelect.value))
+                .then(response => response.json())
+                .then(data => {
+                    if (quantity > data.stock) {
+                        this.setCustomValidity(`Only ${data.stock} units available in stock`);
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
+        }
+    });
+</script>
+<!-- Scanner Modal -->
+<div class="modal fade" id="barcodeScannerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-barcode me-2"></i>Scan Product Barcode</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="ratio ratio-4x3 border rounded">
+                    <video id="barcodeVideo" autoplay muted playsinline></video>
+                </div>
+                <small class="text-muted d-block mt-2">Align the barcode within the frame.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" onclick="startSaleScanner()"><i
+                        class="fas fa-sync-alt me-2"></i>Restart</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+{% endblock %}

@@ -1,0 +1,345 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Customer Debt Management - Carwo Deeqsan{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}"
+                        class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active">Customer Debt</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 fw-bold mb-0">Deymo Macmiilka</h1>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDebtModal">
+                <i class="fas fa-plus me-2"></i>Add Debt
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 bg-danger bg-opacity-10">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Total Debt</p>
+                <h4 class="fw-bold mb-0 text-danger">{{ total_debt_etb|floatformat:2 }} ETB</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 bg-primary bg-opacity-10">
+            <div class="card-body">
+                <p class="text-muted small mb-1">USD Debt</p>
+                <h5 class="fw-bold mb-0 text-primary">${{ total_debt_usd|floatformat:2 }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 bg-success bg-opacity-10">
+            <div class="card-body">
+                <p class="text-muted small mb-1">SOS Debt</p>
+                <h5 class="fw-bold mb-0 text-success">{{ total_debt_sos|floatformat:0 }} SOS</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 bg-info bg-opacity-10">
+            <div class="card-body">
+                <p class="text-muted small mb-1">ETB Debt</p>
+                <h5 class="fw-bold mb-0 text-info">{{ total_debt_etb_currency|floatformat:2 }} ETB</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customers with Debt -->
+<div class="card shadow-sm">
+    <div class="card-header bg-transparent">
+        <h5 class="mb-0 fw-bold"><i class="fas fa-users me-2 text-primary"></i>{{ customers_count }} Customers with Debt
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if customers_with_debt %}
+        <!-- Desktop Table View -->
+        <div class="d-none d-md-block table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Customer</th>
+                        <th>USD Debt</th>
+                        <th>SOS Debt</th>
+                        <th>ETB Debt</th>
+                        <th>Last Purchase</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers_with_debt %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ customer.name }}</div>
+                            <small class="text-muted">{{ customer.phone }}</small>
+                        </td>
+                        <td>
+                            {% if customer.total_debt_usd > 0 %}
+                            <span class="text-danger fw-bold">${{ customer.total_debt_usd|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if customer.total_debt_sos > 0 %}
+                            <span class="text-danger fw-bold">{{ customer.total_debt_sos|floatformat:0 }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if customer.total_debt_etb > 0 %}
+                            <span class="text-danger fw-bold">{{ customer.total_debt_etb|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">
+                            {% if customer.last_purchase_date %}
+                            {{ customer.last_purchase_date|date:"M d, Y" }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-success"
+                                onclick="openPaymentModal({{ customer.id }}, '{{ customer.name }}', {{ customer.total_debt_usd }}, {{ customer.total_debt_sos }}, {{ customer.total_debt_etb }})">
+                                <i class="fas fa-money-bill me-1"></i>Payment
+                            </button>
+                            <a href="{% url 'core:customer_detail' customer.id %}"
+                                class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="d-md-none">
+            {% for customer in customers_with_debt %}
+            <div class="border-bottom p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <div class="fw-bold">{{ customer.name }}</div>
+                        <small class="text-muted">{{ customer.phone }}</small>
+                    </div>
+                </div>
+                <div class="row g-2 mt-2">
+                    {% if customer.total_debt_usd > 0 %}
+                    <div class="col-4">
+                        <small class="text-muted d-block">USD</small>
+                        <div class="text-danger fw-bold">${{ customer.total_debt_usd|floatformat:2 }}</div>
+                    </div>
+                    {% endif %}
+                    {% if customer.total_debt_sos > 0 %}
+                    <div class="col-4">
+                        <small class="text-muted d-block">SOS</small>
+                        <div class="text-danger fw-bold">{{ customer.total_debt_sos|floatformat:0 }}</div>
+                    </div>
+                    {% endif %}
+                    {% if customer.total_debt_etb > 0 %}
+                    <div class="col-4">
+                        <small class="text-muted d-block">ETB</small>
+                        <div class="text-danger fw-bold">{{ customer.total_debt_etb|floatformat:2 }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-sm btn-success flex-1"
+                        onclick="openPaymentModal({{ customer.id }}, '{{ customer.name }}', {{ customer.total_debt_usd }}, {{ customer.total_debt_sos }}, {{ customer.total_debt_etb }})">
+                        <i class="fas fa-money-bill me-1"></i>Record Payment
+                    </button>
+                    <a href="{% url 'core:customer_detail' customer.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-5 text-center text-muted">
+            <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+            <p class="mb-0">No customers with outstanding debt!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Debt Modal -->
+<div class="modal fade" id="addDebtModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add Debt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_debt">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Customer <span class="text-danger">*</span></label>
+                        <select name="customer_id" class="form-select" required>
+                            <option value="">Select Customer</option>
+                            {% for customer in all_customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }} ({{ customer.phone }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Amount <span class="text-danger">*</span></label>
+                        <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Currency <span class="text-danger">*</span></label>
+                        <select name="currency" class="form-select" required>
+                            <option value="USD">USD</option>
+                            <option value="SOS">SOS</option>
+                            <option value="ETB">ETB</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Debt</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-money-bill me-2"></i>Record Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="paymentForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="record_payment">
+                <input type="hidden" name="customer_id" id="payment_customer_id">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Customer:</strong> <span id="payment_customer_name"></span><br>
+                        <div class="mt-2" id="payment_debt_info"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Currency <span class="text-danger">*</span></label>
+                        <select name="currency" id="payment_currency" class="form-select" required
+                            onchange="updatePaymentValidation()">
+                            <option value="USD">USD</option>
+                            <option value="SOS">SOS</option>
+                            <option value="ETB">ETB</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Payment Amount <span class="text-danger">*</span></label>
+                        <input type="number" name="amount" id="payment_amount" class="form-control" step="0.01"
+                            min="0.01" required oninput="updatePaymentValidation()">
+                        <div class="form-text" id="payment_validation_message"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="payment_submit_btn">Record Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentCustomerDebt = { usd: 0, sos: 0, etb: 0 };
+
+    function openPaymentModal(customerId, customerName, debtUSD, debtSOS, debtETB) {
+        currentCustomerDebt = {
+            usd: parseFloat(debtUSD) || 0,
+            sos: parseFloat(debtSOS) || 0,
+            etb: parseFloat(debtETB) || 0
+        };
+
+        document.getElementById('payment_customer_id').value = customerId;
+        document.getElementById('payment_customer_name').textContent = customerName;
+
+        let debtInfo = '';
+        if (currentCustomerDebt.usd > 0) debtInfo += `USD Debt: $${currentCustomerDebt.usd.toFixed(2)}<br>`;
+        if (currentCustomerDebt.sos > 0) debtInfo += `SOS Debt: ${currentCustomerDebt.sos.toFixed(0)} SOS<br>`;
+        if (currentCustomerDebt.etb > 0) debtInfo += `ETB Debt: ${currentCustomerDebt.etb.toFixed(2)} ETB<br>`;
+
+        document.getElementById('payment_debt_info').innerHTML = debtInfo;
+
+        updatePaymentValidation();
+
+        const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        modal.show();
+    }
+
+    function updatePaymentValidation() {
+        const currency = document.getElementById('payment_currency').value;
+        const amount = parseFloat(document.getElementById('payment_amount').value) || 0;
+        const submitBtn = document.getElementById('payment_submit_btn');
+        const validationMsg = document.getElementById('payment_validation_message');
+
+        let maxDebt = 0;
+        if (currency === 'USD') maxDebt = currentCustomerDebt.usd;
+        else if (currency === 'SOS') maxDebt = currentCustomerDebt.sos;
+        else if (currency === 'ETB') maxDebt = currentCustomerDebt.etb;
+
+        if (amount > maxDebt) {
+            validationMsg.innerHTML = `<span class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>Payment (${amount.toFixed(2)} ${currency}) exceeds debt (${maxDebt.toFixed(2)} ${currency})</span>`;
+            submitBtn.disabled = true;
+        } else if (amount > 0) {
+            const remaining = maxDebt - amount;
+            validationMsg.innerHTML = `<span class="text-success"><i class="fas fa-check-circle me-1"></i>New debt will be: ${remaining.toFixed(2)} ${currency}</span>`;
+            submitBtn.disabled = false;
+        } else {
+            validationMsg.innerHTML = `<span class="text-muted">Current debt: ${maxDebt.toFixed(2)} ${currency}</span>`;
+            submitBtn.disabled = amount <= 0;
+        }
+    }
+
+    // Form validation on submit
+    document.getElementById('paymentForm').addEventListener('submit', function (e) {
+        const currency = document.getElementById('payment_currency').value;
+        const amount = parseFloat(document.getElementById('payment_amount').value) || 0;
+
+        let maxDebt = 0;
+        if (currency === 'USD') maxDebt = currentCustomerDebt.usd;
+        else if (currency === 'SOS') maxDebt = currentCustomerDebt.sos;
+        else if (currency === 'ETB') maxDebt = currentCustomerDebt.etb;
+
+        if (amount > maxDebt) {
+            e.preventDefault();
+            alert(`Payment amount (${amount.toFixed(2)} ${currency}) cannot exceed debt (${maxDebt.toFixed(2)} ${currency})`);
+            return false;
+        }
+    });
+</script>
+{% endblock %}

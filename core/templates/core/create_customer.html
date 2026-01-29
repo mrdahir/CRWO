@@ -1,0 +1,162 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Macmiil Cusub - Carwo Deeqsan Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ensure all content is visible on mobile */
+    .container-fluid {
+        padding-bottom: 120px !important; /* Extra space for bottom navigation */
+    }
+    
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-bottom: 140px !important;
+        }
+        
+        /* Ensure cards have proper spacing */
+        .card {
+            margin-bottom: 20px !important;
+        }
+        
+        /* Make buttons more prominent */
+        .btn {
+            min-height: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        /* Improve header spacing */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+        
+        .btn-toolbar {
+            margin-top: 16px;
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-user-plus me-2"></i>Macmiil Cusub
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'core:customers_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Ku Noqo Macmiilka
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user me-2"></i>Xogaha Macmiilka
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.phone|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    {{ form.is_active.label }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'core:customers_list' %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-times me-2"></i>Kanoqo
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Macmiil Kudar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Talooyin
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Lambarka telefoonka waa inuu ka duwan tahay
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Magaca macmiilka waajib ah
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Lambarka telefoonka waxay ka cawinaysa inad so sarto
+                    </li>
+                    <li>
+                        <i class="fas fa-check text-success me-2"></i>
+                        Macmiilada la sameyo en waxba ka iibsan kumaso baxayan ila ay wax ibsadan
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Sifada Macmiilka
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-shopping-cart text-primary me-2"></i>
+                        Raad raaca taariikhda iibka macmilka
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-credit-card text-warning me-2"></i>
+                        Maareynta daynta macmiilka
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-chart-line text-success me-2"></i>
+                        xogta iibka macmilka
+                    </li>
+                    <li>
+                        <i class="fas fa-search text-info me-2"></i>
+                        ku Raadi si degdeg ah oo magac ama telefonka macmilka
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

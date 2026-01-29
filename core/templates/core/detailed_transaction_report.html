@@ -1,0 +1,279 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Detailed Transaction Report{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    .table-mobile-collapse {
+        display: none;
+    }
+
+    /* Card-style layout for mobile */
+    .mobile-row {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        background-color: #fff;
+    }
+
+    .mobile-row-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: bold;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .mobile-row-detail {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+        font-size: 0.875rem; /* Smaller font for details */
+    }
+
+    .mobile-row-detail strong {
+        font-weight: 600;
+    }
+
+    /* Hide the regular table on mobile */
+    .desktop-table {
+        display: none;
+    }
+}
+
+/* Desktop styles */
+@media (min-width: 769px) {
+    .mobile-layout {
+        display: none;
+    }
+    .desktop-table {
+        display: table; /* Or keep default display */
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0 fw-bold">Detailed Transaction Report</h1>
+            <p class="text-muted">View individual sales transactions with customer, product, pricing, profit, surplus, and allocated overpayment details.</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Period (Days)</label>
+                    <select name="days" class="form-select" onchange="this.form.submit()">
+                        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+                        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+                        <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+                        <option value="365" {% if days == 365 %}selected{% endif %}>Last Year</option>
+                        <option value="0" {% if days == 0 %}selected{% endif %}>Custom Range</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="start_date" class="form-label small fw-bold">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="end_date" class="form-label small fw-bold">End Date</label>
+                    <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Currency</label>
+                    <select name="currency" class="form-select" onchange="this.form.submit()">
+                        <option value="ALL" {% if currency_filter == 'ALL' or not currency_filter %}selected{% endif %}>All Currencies</option>
+                        <option value="USD" {% if currency_filter == 'USD' %}selected{% endif %}>USD</option>
+                        <!-- SOS option removed -->
+                        <option value="ETB" {% if currency_filter == 'ETB' %}selected{% endif %}>ETB</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Product</label>
+                    <select name="product" class="form-select" onchange="this.form.submit()">
+                        <option value="" {% if not product_filter %}selected{% endif %}>All Products</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" {% if product_filter == product.id|stringformat:"s" %}selected{% endif %}>{{ product.name }} ({{ product.brand }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 mt-2">
+                    <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row g-3 mb-4">
+        <!-- Removed Total Quantity, Total Sales Cards -->
+        <!-- Keep only Profit and Overpayment per currency -->
+        <div class="col-md-2">
+            <div class="card border-0 bg-warning bg-opacity-10">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">Macashka USD(Dollarka)</h5>
+                    <p class="card-text fw-bold">${{ total_profit_usd|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <!-- SOS Profit card removed -->
+        <div class="col-md-2">
+            <div class="card border-0 bg-warning bg-opacity-10">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">Macashka ETB(Birta)</h5>
+                    <p class="card-text fw-bold">{{ total_profit_etb|floatformat:0 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 bg-secondary bg-opacity-10">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">Lacagta Macashka Dheeriga(USD)</h5>
+                    <p class="card-text fw-bold">${{ total_allocated_overpayment_usd|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <!-- SOS Overpayment card removed -->
+        <div class="col-md-2">
+            <div class="card border-0 bg-secondary bg-opacity-10">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-muted">Lacagta Macashka Dheeriga(ETB)</h5>
+                    <p class="card-text fw-bold">{{ total_allocated_overpayment_etb|floatformat:0 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-file-invoice me-2 text-primary"></i>Transaction Details</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if transaction_data %}
+            <!-- Desktop Table -->
+            <div class="table-responsive desktop-table">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <!-- Removed: Date/Time, Transaction ID, Customer, Currency -->
+                            <th scope="col">Badeecada</th>
+                            <th scope="col">Xadiga</th>
+                            <th scope="col">Qimaha Lagu iibiyay</th>
+                            <th scope="col">Qiimaha lagu iibinyo</th>
+                            <th scope="col">Rasamalka(Badecadi)</th>
+                            <th scope="col">Qiimaha Guud(Badecada)</th>
+                            <!-- Added back: Sale Amount Paid, Sale Total Amount -->
+                            <th scope="col">Qiimaha lagu ibsadey</th>
+                            <th scope="col">Totalka Qiimaha Guud</th>
+                            <!-- Removed: Item Surplus, Allocated Overpayment -->
+                            <th scope="col">Final Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in transaction_data %}
+                        <tr>
+                            <!-- Removed: Date/Time, Transaction ID, Customer, Currency -->
+                            <td>{{ item.product_name }} ({{ item.product_brand }})</td>
+                            <td>{{ item.quantity|floatformat:2 }}</td>
+                            <td>{{ item.unit_price_sold|floatformat:2 }}</td>
+                            <td>{{ item.unit_minimum_selling_price|floatformat:2 }}</td>
+                            <td>{{ item.unit_purchase_price|floatformat:2 }}</td>
+                            <td>{{ item.total_sale_amount|floatformat:2 }}</td>
+                            <!-- Added back: Sale Amount Paid, Sale Total Amount -->
+                            <!-- Style Sale Amount Paid as requested -->
+                            <td class="text-primary fw-bold">{{ item.sale_amount_paid|floatformat:2 }}</td>
+                            <td>{{ item.sale_total_amount|floatformat:2 }}</td>
+                            <!-- Removed: Item Surplus, Allocated Overpayment -->
+                            <!-- Use the final profit which incorporates overpayment allocation -->
+                            <td class="{% if item.profit >= 0 %}text-success fw-bold{% else %}text-danger{% endif %}">{{ item.profit|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Card Layout -->
+            <div class="mobile-layout">
+                {% for item in transaction_data %}
+                <div class="mobile-row">
+                    <div class="mobile-row-header">
+                        <span>{{ item.product_name }} ({{ item.product_brand }})</span>
+                        <!-- Added: Currency badge -->
+                        <span class="badge {% if item.currency == 'USD' %}bg-primary{% else %}bg-info{% endif %}">{{ item.currency }}</span>
+                    </div>
+                    <!-- Removed: Date, ID, Customer -->
+                    <div class="mobile-row-detail">
+                        <strong>Xadiga:</strong> <span>{{ item.quantity|floatformat:2 }}</span>
+                    </div>
+                    <div class="mobile-row-detail">
+                        <strong>Qimaha Lagu iibiyay:</strong> <span>{{ item.unit_price_sold|floatformat:2 }}</span>
+                    </div>
+                    <div class="mobile-row-detail">
+                        <strong>Qiimaha lagu iibinyo:</strong> <span>{{ item.unit_minimum_selling_price|floatformat:2 }}</span>
+                    </div>
+                    <div class="mobile-row-detail">
+                        <strong>Rasamalka(Badecadi):</strong> <span>{{ item.unit_purchase_price|floatformat:2 }}</span>
+                    </div>
+                    <div class="mobile-row-detail">
+                        <strong>Qiimaha Guud(Badecada):</strong> <span>{{ item.total_sale_amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="mobile-row-detail">
+                        <!-- Style Sale Amount Paid as requested -->
+                        <strong>Qiimaha lagu ibsadey:</strong> <span class="text-primary fw-bold">{{ item.sale_amount_paid|floatformat:2 }}</span>
+                    </div>
+                    <div class="mobile-row-detail">
+                        <strong>Totalka Qiimaha Guud:</strong> <span>{{ item.sale_total_amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="mobile-row-detail">
+                        <strong>Final Profit:</strong> <span class="{% if item.profit >= 0 %}text-success fw-bold{% else %}text-danger{% endif %}">{{ item.profit|floatformat:2 }}</span>
+                    </div>
+                    <!-- Removed: Item Surplus, Allocated Overpayment -->
+                </div>
+                {% endfor %}
+            </div>
+
+            {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p>No transactions found for the selected filters.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Optional: Refresh the page when custom date range is selected if days is set to 0
+    document.addEventListener('DOMContentLoaded', function () {
+        const daysSelect = document.querySelector('select[name="days"]');
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+
+        function toggleDateInputs() {
+            if (daysSelect.value === '0') {
+                startDateInput.disabled = false;
+                endDateInput.disabled = false;
+            } else {
+                startDateInput.disabled = true;
+                endDateInput.disabled = true;
+            }
+        }
+
+        daysSelect.addEventListener('change', toggleDateInputs);
+        toggleDateInputs(); // Run once on load
+    });
+</script>
+{% endblock %}

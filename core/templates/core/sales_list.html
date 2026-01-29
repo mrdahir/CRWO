@@ -1,0 +1,251 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Iibka - CarwoDeeqsan Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ensure all content is visible on mobile */
+    .container-fluid {
+        padding-bottom: 120px !important;
+        /* Extra space for bottom navigation */
+    }
+
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-bottom: 140px !important;
+        }
+
+        /* Ensure cards have proper spacing */
+        .card {
+            margin-bottom: 20px !important;
+        }
+
+        /* Make buttons more prominent */
+        .btn {
+            min-height: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* Improve table responsiveness */
+        .table-responsive {
+            font-size: 0.875rem;
+        }
+
+        /* Better spacing for search form */
+        .row.g-3 {
+            --bs-gutter-y: 16px;
+        }
+
+        /* Improve header spacing */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+
+        .btn-toolbar {
+            margin-top: 16px;
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-shopping-cart me-2"></i>Iibka
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'core:create_sale' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Iibso Cusub
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">Raadi</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ search }}"
+                    placeholder="Raadi iyada oo isticmaali ID, magaca macmiilka ama lambarka telefoonka...">
+            </div>
+            <div class="col-md-3">
+                <label for="currency" class="form-label">Lacagta</label>
+                <select class="form-select" id="currency" name="currency">
+                    <option value="">Dhammu Lacagta</option>
+                    <option value="USD" {% if currency == 'USD' %}selected{% endif %}>USD</option>
+                    <option value="SOS" {% if currency == 'SOS' %}selected{% endif %}>SOS</option>
+                    <option value="ETB" {% if currency == 'ETB' %}selected{% endif %}>ETB</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Raadi
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Sales Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Sales Transactions</h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Customer</th>
+                        <th>Currency</th>
+                        <th>Total Amount</th>
+                        <th>Amount Paid</th>
+                        <th>Debt</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in page_obj %}
+                    <tr>
+                        <td>
+                            <code>{{ sale.transaction_id|truncatechars:8 }}</code>
+                            <br><small class="text-muted">{{ sale.type }}</small>
+                        </td>
+                        <td>
+                            <strong>{{ sale.customer.name }}</strong><br>
+                            <small class="text-muted">{{ sale.customer.phone }}</small>
+                        </td>
+
+                        <td>
+                            <span
+                                class="badge {% if sale.currency == 'USD' %}bg-primary{% elif sale.currency == 'SOS' %}bg-success{% else %}bg-info{% endif %}">
+                                {{ sale.currency }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>
+                                {% if sale.currency == 'USD' %}${% endif %}
+                                {{ sale.total_amount|floatformat:2 }}
+                                {% if sale.currency == 'SOS' %} SOS{% endif %}
+                                {% if sale.currency == 'ETB' %} ETB{% endif %}
+                            </strong>
+                        </td>
+                        <td>
+                            {% if sale.currency == 'USD' %}${% endif %}
+                            {{ sale.amount_paid|floatformat:2 }}
+                            {% if sale.currency == 'SOS' %} SOS{% endif %}
+                            {% if sale.currency == 'ETB' %} ETB{% endif %}
+                        </td>
+                        <td>
+                            {% if sale.debt_amount > 0 %}
+                            <span class="badge bg-danger">
+                                {% if sale.currency == 'USD' %}${% endif %}
+                                {{ sale.debt_amount|floatformat:2 }}
+                                {% if sale.currency == 'SOS' %} SOS{% endif %}
+                                {% if sale.currency == 'ETB' %} ETB{% endif %}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-success">Paid</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ sale.date_created|date:"M d, Y" }}</small><br>
+                            <small class="text-muted">{{ sale.date_created|time:"H:i" }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'core:sale_detail' sale.currency sale.id %}"
+                                    class="btn btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if user.is_superuser %}
+                                <a href="{% url 'core:edit_sale' sale.currency sale.id %}"
+                                    class="btn btn-outline-secondary" title="Edit Sale">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Sales pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                        href="?page=1{% if search %}&search={{ search }}{% endif %}{% if currency %}&currency={{ currency }}{% endif %}">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if currency %}&currency={{ currency }}{% endif %}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %} <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if currency %}&currency={{ currency }}{% endif %}">{{
+                        num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if currency %}&currency={{ currency }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if currency %}&currency={{ currency }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No sales found</h5>
+            <p class="text-muted">Start by creating your first sale.</p>
+            <a href="{% url 'core:create_sale' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create Sale
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

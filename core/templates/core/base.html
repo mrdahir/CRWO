@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="so">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0066CC">
+    <meta name="referrer" content="same-origin">
+    <title>{% block title %}Carwo Deeqsan{% endblock %}</title>
+
+    <!-- PWA Manifest & Meta -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Carwo Deeqsan">
+    <link rel="apple-touch-icon" href="/static/images/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/images/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/images/icons/icon-192x192.png">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* ============================================
+           CSS VARIABLES - Normalized Design System
+           ============================================ */
+        :root {
+            /* Colors */
+            --primary-color: #0066CC;
+            --primary-light: #4A9EFF;
+            --primary-dark: #004C99;
+            --secondary-color: #4A4A8A;
+            --success-color: #28A745;
+            --warning-color: #FD7E14;
+            --danger-color: #DC3545;
+            --bg-body: #F5F7FA;
+            --bg-card: #FFFFFF;
+            --bg-sidebar: #FFFFFF;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+            --focus-ring: rgba(0, 102, 204, 0.15);
+            --hover-bg: #EBF5FF;
+
+            /* Spacing Scale - Consistent 4px base unit */
+            --space-xs: 0.25rem;
+            /* 4px */
+            --space-sm: 0.5rem;
+            /* 8px */
+            --space-md: 1rem;
+            /* 16px */
+            --space-lg: 1.5rem;
+            /* 24px */
+            --space-xl: 2rem;
+            /* 32px */
+            --space-2xl: 3rem;
+            /* 48px */
+
+            /* Border Radius - Consistent scale */
+            --radius-sm: 0.5rem;
+            /* 8px */
+            --radius-md: 0.75rem;
+            /* 12px */
+            --radius-lg: 1rem;
+            /* 16px */
+            --radius-full: 9999px;
+
+            /* Layout Dimensions */
+            --sidebar-width: 280px;
+            --header-height: 60px;
+            --bottom-nav-height: 64px;
+            --touch-target-min: 44px;
+            /* Minimum touch target size */
+
+            /* Safe Area Insets */
+            --safe-area-top: env(safe-area-inset-top, 0px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+            /* Typography - Fluid sizing with clamp() */
+            --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, sans-serif;
+            --font-size-xs: clamp(0.625rem, 0.5rem + 0.5vw, 0.75rem);
+            /* 10-12px */
+            --font-size-sm: clamp(0.75rem, 0.625rem + 0.5vw, 0.875rem);
+            /* 12-14px */
+            --font-size-base: clamp(0.875rem, 0.75rem + 0.5vw, 1rem);
+            /* 14-16px */
+            --font-size-lg: clamp(1rem, 0.875rem + 0.5vw, 1.125rem);
+            /* 16-18px */
+            --font-size-xl: clamp(1.125rem, 1rem + 0.5vw, 1.25rem);
+            /* 18-20px */
+            --font-size-2xl: clamp(1.25rem, 1.125rem + 0.5vw, 1.5rem);
+            /* 20-24px */
+            --font-size-3xl: clamp(1.5rem, 1.25rem + 0.75vw, 2rem);
+            /* 24-32px */
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-floating: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+            /* Transitions */
+            --transition-base: 0.2s ease-in-out;
+            --transition-fast: 0.15s ease-in-out;
+        }
+
+        /* ============================================
+           RESET & BASE STYLES
+           ============================================ */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        *:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        body {
+            font-family: var(--font-family);
+            font-size: var(--font-size-base);
+            line-height: 1.5;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            /* Prevent horizontal scrolling */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ============================================
+           APP SHELL LAYOUT
+           ============================================ */
+        .app-shell {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+            /* Dynamic viewport height for mobile */
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* ============================================
+           MAIN CONTENT AREA
+           ============================================ */
+        .main-content {
+            flex: 1;
+            width: 100%;
+            max-width: 100%;
+            padding: var(--space-md);
+            margin-bottom: calc(var(--bottom-nav-height) + var(--safe-area-bottom));
+            overflow-x: hidden;
+            /* Prevent horizontal overflow */
+        }
+
+        /* ============================================
+           DESKTOP SIDEBAR
+           ============================================ */
+        .desktop-sidebar {
+            display: none;
+        }
+
+        /* ============================================
+           MOBILE HEADER
+           ============================================ */
+        .mobile-header {
+            background: var(--bg-card);
+            padding: var(--safe-area-top) var(--space-md) var(--space-sm);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: calc(var(--header-height) + var(--safe-area-top));
+            width: 100%;
+        }
+
+        .mobile-header .btn-link,
+        .mobile-header a {
+            min-width: var(--touch-target-min);
+            min-height: var(--touch-target-min);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: background-color var(--transition-base);
+        }
+
+        .mobile-header .btn-link:focus-visible,
+        .mobile-header a:focus-visible {
+            background-color: var(--hover-bg);
+        }
+
+        /* ============================================
+           BOTTOM NAVIGATION (Mobile)
+           ============================================ */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            min-height: calc(var(--bottom-nav-height) + var(--safe-area-bottom));
+            padding: var(--space-sm) var(--space-xs) var(--safe-area-bottom);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .bottom-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: var(--font-size-xs);
+            min-height: var(--touch-target-min);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: color var(--transition-base), background-color var(--transition-base);
+            padding: var(--space-xs);
+        }
+
+        .bottom-nav-item:focus-visible {
+            background-color: var(--hover-bg);
+            outline: none;
+        }
+
+        .bottom-nav-item i {
+            font-size: var(--font-size-xl);
+            margin-bottom: var(--space-xs);
+            transition: transform var(--transition-fast);
+        }
+
+        .bottom-nav-item.active {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .bottom-nav-item.active i {
+            transform: scale(1.1);
+        }
+
+        /* ============================================
+           DESKTOP LAYOUT (1024px and above)
+           ============================================ */
+        @media (min-width: 1024px) {
+            .app-shell {
+                flex-direction: row;
+            }
+
+            .mobile-header,
+            .bottom-nav {
+                display: none !important;
+            }
+
+            .desktop-sidebar {
+                display: flex;
+                flex-direction: column;
+                width: var(--sidebar-width);
+                min-width: var(--sidebar-width);
+                max-width: var(--sidebar-width);
+                background: var(--bg-sidebar);
+                border-right: 1px solid var(--border-color);
+                height: 100vh;
+                height: 100dvh;
+                position: sticky;
+                top: 0;
+                padding: var(--space-lg);
+                overflow-y: auto;
+                overflow-x: hidden;
+                /* Smooth scrolling for better UX */
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .main-content {
+                flex: 1;
+                margin-bottom: 0;
+                padding: var(--space-xl);
+                max-width: calc(100vw - var(--sidebar-width));
+                min-width: 0;
+                /* Prevent flex item from overflowing */
+            }
+        }
+
+        /* ============================================
+           NAVIGATION ITEMS (Desktop Sidebar)
+           ============================================ */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: var(--space-md);
+            margin-bottom: var(--space-xs);
+            color: var(--text-secondary);
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            font-size: var(--font-size-base);
+            text-decoration: none;
+            transition: all var(--transition-base);
+            min-height: var(--touch-target-min);
+            position: relative;
+        }
+
+        .nav-item:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background-color: var(--hover-bg);
+            color: var(--primary-color);
+        }
+
+        .nav-item i {
+            width: 1.5rem;
+            min-width: 1.5rem;
+            margin-right: var(--space-md);
+            font-size: var(--font-size-lg);
+            text-align: center;
+        }
+
+        /* ============================================
+           CARDS
+           ============================================ */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border-color);
+            padding: var(--space-md);
+            font-weight: 600;
+            font-size: var(--font-size-lg);
+        }
+
+        .card-body {
+            padding: var(--space-md);
+        }
+
+        /* ============================================
+           BUTTONS
+           ============================================ */
+        .btn {
+            border-radius: var(--radius-md);
+            padding: var(--space-md) var(--space-lg);
+            font-weight: 600;
+            font-size: var(--font-size-base);
+            min-height: var(--touch-target-min);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-base);
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+
+        .btn-outline-danger {
+            min-width: var(--touch-target-min);
+            min-height: var(--touch-target-min);
+        }
+
+        /* ============================================
+           FORM CONTROLS
+           ============================================ */
+        .form-control {
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            border: 1px solid var(--border-color);
+            font-size: var(--font-size-base);
+            min-height: var(--touch-target-min);
+            width: 100%;
+            transition: border-color var(--transition-base), box-shadow var(--transition-base);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--focus-ring);
+            outline: none;
+        }
+
+        /* ============================================
+           TOAST NOTIFICATIONS
+           ============================================ */
+        .toast-container {
+            position: fixed;
+            top: calc(var(--header-height) + var(--safe-area-top) + var(--space-md));
+            right: var(--space-md);
+            left: var(--space-md);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            max-width: 100%;
+            pointer-events: none;
+        }
+
+        @media (min-width: 640px) {
+            .toast-container {
+                left: auto;
+                right: var(--space-md);
+                max-width: 400px;
+            }
+        }
+
+        .toast {
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-floating);
+            border: none;
+            overflow: hidden;
+            background: var(--bg-card);
+            pointer-events: auto;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* ============================================
+           UTILITY CLASSES
+           ============================================ */
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+
+        .text-secondary {
+            color: var(--text-secondary) !important;
+        }
+
+        /* ============================================
+           RESPONSIVE TYPOGRAPHY ADJUSTMENTS
+           ============================================ */
+        @media (max-width: 375px) {
+            .main-content {
+                padding: var(--space-sm);
+            }
+
+            .desktop-sidebar {
+                padding: var(--space-md);
+            }
+        }
+
+        /* ============================================
+           TABLET OPTIMIZATIONS (768px - 1023px)
+           ============================================ */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .main-content {
+                padding: var(--space-lg);
+            }
+        }
+
+        /* ============================================
+           ACCESSIBILITY IMPROVEMENTS
+           ============================================ */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            :root {
+                --border-color: #000000;
+                --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <div class="app-shell">
+        <nav class="desktop-sidebar">
+            <div class="mb-5 px-2">
+                <a href="{% url 'core:dashboard' %}"
+                    class="d-flex align-items-center text-primary text-decoration-none">
+                    <i class="fas fa-store fa-2x me-3"></i>
+                    <span class="h4 mb-0 fw-bold">Carwo Deeqsan</span>
+                </a>
+            </div>
+            <div class="d-flex flex-column gap-2 flex-grow-1">
+                <a href="{% url 'core:dashboard' %}"
+                    class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-chart-pie"></i> xogaha
+                </a>
+                {% if user.is_superuser or user.can_sell %}
+                <a href="{% url 'core:create_sale' %}"
+                    class="nav-item {% if request.resolver_match.url_name == 'create_sale' %}active{% endif %}">
+                    <i class="fas fa-cash-register"></i> Iib Cusub
+                </a>
+                {% endif %}
+                {% if user.is_superuser or user.can_restock %}
+                <a href="{% url 'core:inventory_list' %}"
+                    class="nav-item {% if request.resolver_match.url_name == 'inventory_list' %}active{% endif %}">
+                    <i class="fas fa-boxes"></i> Kaydka
+                </a>
+                {% endif %}
+                <a href="{% url 'core:customers_list' %}"
+                    class="nav-item {% if request.resolver_match.url_name == 'customers_list' %}active{% endif %}">
+                    <i class="fas fa-users"></i> Macmiil
+                </a>
+
+            </div>
+            <div class="mt-auto pt-4 border-top">
+                <div class="d-flex align-items-center justify-content-between px-2">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3"><i
+                                class="fas fa-user"></i></div>
+                        <div>
+                            <div class="fw-bold text-dark">{{ user.get_full_name|default:user.username }}</div>
+                            <small class="text-secondary">Soo galay</small>
+                        </div>
+                    </div>
+                    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit"
+                            class="btn btn-sm btn-outline-danger border-0"><i class="fas fa-sign-out-alt"></i></button>
+                    </form>
+                </div>
+            </div>
+        </nav>
+
+        <header class="mobile-header">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-store text-primary me-2 fs-4"></i><span class="fw-bold fs-5">Carwo Deeqsan</span>
+            </div>
+            <div class="d-flex gap-3">
+                <a href="{% url 'core:debug_user' %}" class="text-secondary"><i class="fas fa-bug"></i></a>
+                <form method="post" action="{% url 'logout' %}" style="display:inline;">{% csrf_token %}<button
+                        type="submit" class="btn btn-link p-0 text-secondary"><i
+                            class="fas fa-sign-out-alt"></i></button></form>
+            </div>
+        </header>
+
+        <main class="main-content">
+            {% if messages %}
+            <div class="toast-container">
+                {% for message in messages %}
+                <div class="toast show animate__animated animate__fadeInRight" role="alert">
+                    <div class="d-flex align-items-center p-3">
+                        {% if message.tags == 'success' %}
+                        <i class="fas fa-check-circle text-success fs-4 me-3"></i>
+                        {% elif message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle text-danger fs-4 me-3"></i>
+                        {% else %}
+                        <i class="fas fa-info-circle text-info fs-4 me-3"></i>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fw-bold">
+                                {% if message.tags == 'error' %}
+                                Khalad
+                                {% else %}
+                                Ogeysiis
+                                {% endif %}
+                            </h6>
+                            <small class="text-secondary">{{ message }}</small>
+                        </div>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+
+        <nav class="bottom-nav">
+            <a href="{% url 'core:dashboard' %}"
+                class="bottom-nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <i class="fas fa-home"></i><span>Guriga</span>
+            </a>
+            {% if user.is_superuser or user.can_sell %}
+            <a href="{% url 'core:create_sale' %}"
+                class="bottom-nav-item {% if request.resolver_match.url_name == 'create_sale' %}active{% endif %}">
+                <i class="fas fa-plus-circle fs-3 text-primary"></i><span class="fw-bold text-primary">Iib</span>
+            </a>
+            {% endif %}
+            {% if user.is_superuser or user.can_restock %}
+            <a href="{% url 'core:inventory_list' %}"
+                class="bottom-nav-item {% if request.resolver_match.url_name == 'inventory_list' %}active{% endif %}">
+                <i class="fas fa-box"></i><span>Kaydka</span>
+            </a>
+            {% endif %}
+            <a href="{% url 'core:customers_list' %}"
+                class="bottom-nav-item {% if request.resolver_match.url_name == 'customers_list' %}active{% endif %}">
+                <i class="fas fa-users"></i><span>Dadka</span>
+            </a>
+        </nav>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        /**
+         * Toast Notification System
+         * Handles auto-dismissal of toast messages and provides showToast utility
+         */
+        (function () {
+            'use strict';
+
+            // Auto-dismiss existing toasts on page load
+            document.addEventListener('DOMContentLoaded', function () {
+                const toasts = document.querySelectorAll('.toast');
+                const TOAST_DURATION = 5000; // 5 seconds
+
+                toasts.forEach(function (toast) {
+                    const toastInstance = new bootstrap.Toast(toast, {
+                        autohide: true,
+                        delay: TOAST_DURATION
+                    });
+                    toastInstance.show();
+                });
+
+                // Prevent iOS double-tap zoom gesture
+                document.addEventListener('gesturestart', function (e) {
+                    e.preventDefault();
+                }, { passive: false });
+            });
+
+            /**
+             * Global toast notification function
+             * @param {string} message - The message to display
+             * @param {string} type - Type of toast: 'success', 'error', or 'info'
+             */
+            window.showToast = function (message, type) {
+                type = type || 'info';
+                const TOAST_DURATION = 4000;
+                const ANIMATION_DELAY = 500;
+
+                // Get or create toast container
+                let container = document.querySelector('.toast-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = 'toast-container';
+                    const mainContent = document.querySelector('.main-content');
+                    if (mainContent) {
+                        mainContent.appendChild(container);
+                    } else {
+                        document.body.appendChild(container);
+                    }
+                }
+
+                // Determine icon and color based on type
+                const iconMap = {
+                    success: 'check-circle text-success',
+                    error: 'exclamation-circle text-danger',
+                    info: 'info-circle text-info'
+                };
+                const iconClass = iconMap[type] || iconMap.info;
+
+                // Create toast element
+                const toastEl = document.createElement('div');
+                toastEl.className = 'toast show animate__animated animate__fadeInRight';
+                toastEl.setAttribute('role', 'alert');
+                toastEl.setAttribute('aria-live', 'polite');
+                toastEl.setAttribute('aria-atomic', 'true');
+                toastEl.innerHTML = [
+                    '<div class="d-flex align-items-center p-3">',
+                    '<i class="fas fa-' + iconClass + ' fs-4 me-3" aria-hidden="true"></i>',
+                    '<div class="flex-grow-1">',
+                    '<small class="fw-bold text-secondary">' + escapeHtml(message) + '</small>',
+                    '</div>',
+                    '<button type="button" class="btn-close ms-2" data-bs-dismiss="toast" aria-label="Close"></button>',
+                    '</div>'
+                ].join('');
+
+                container.appendChild(toastEl);
+
+                // Initialize and show toast
+                const toastInstance = new bootstrap.Toast(toastEl, {
+                    autohide: true,
+                    delay: TOAST_DURATION
+                });
+                toastInstance.show();
+
+                // Remove element after animation completes
+                toastEl.addEventListener('hidden.bs.toast', function () {
+                    setTimeout(function () {
+                        if (toastEl.parentNode) {
+                            toastEl.remove();
+                        }
+                    }, ANIMATION_DELAY);
+                });
+            };
+
+            /**
+             * Escape HTML to prevent XSS
+             * @param {string} text - Text to escape
+             * @returns {string} Escaped text
+             */
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        })();
+    </script>
+    {% block extra_js %}{% endblock %}
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/static/js/service-worker.js')
+                    .then(function (registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    }, function (err) {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+</body>
+
+</html>

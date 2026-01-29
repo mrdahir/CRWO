@@ -1,0 +1,315 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Zax Deyn Khaldantay -  CarwoDeeqsan Management System{% endblock %}
+
+{% block content %}
+<!-- Debug Info -->
+<div class="alert alert-info">
+    <strong>Debug Info:</strong>
+    Customer ID: {{ customer.id }},
+    USD Debt: ${{ current_debt_usd|floatformat:2 }},
+    SOS Debt: {{ current_debt_sos|floatformat:2 }} SOS,
+    ETB Debt: {{ current_debt_etb|floatformat:2 }} ETB
+</div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-edit me-2"></i>Zax Deyn Khaldantay
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'core:customer_detail' customer.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Ku Noqo Macmiilka
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calculator me-2"></i>Debt Correction Form
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="debtCorrectionForm">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="{{ form.currency.id_for_label }}" class="form-label">{{ form.currency.label
+                                }}</label>
+                            {{ form.currency }}
+                            {% if form.currency.errors %}
+                            <div class="text-danger small">{{ form.currency.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.new_debt_amount.id_for_label }}" class="form-label">{{
+                                form.new_debt_amount.label }}</label>
+                            {{ form.new_debt_amount }}
+                            {% if form.new_debt_amount.errors %}
+                            <div class="text-danger small">{{ form.new_debt_amount.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Customer</label>
+                            <div class="form-control-plaintext">{{ customer.name }} ({{ customer.phone }})</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <label for="{{ form.reason.id_for_label }}" class="form-label">{{ form.reason.label
+                                }}</label>
+                            {{ form.reason }}
+                            {% if form.reason.errors %}
+                            <div class="text-danger small">{{ form.reason.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Confirmation Section -->
+                    <div class="alert alert-warning mt-3" id="confirmationSection" style="display: none;">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Confirmation Required</h6>
+                        <p class="mb-2">Please confirm this debt correction:</p>
+                        <div id="confirmationDetails"></div>
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" id="confirmCorrection" required>
+                            <label class="form-check-label" for="confirmCorrection">
+                                I confirm that this debt correction is accurate and necessary
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'core:customer_detail' customer.id %}"
+                            class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="button" class="btn btn-warning me-md-2" id="previewBtn">
+                            <i class="fas fa-eye me-2"></i>Preview Changes
+                        </button>
+                        <button type="submit" class="btn btn-danger" id="submitBtn" style="display: none;">
+                            <i class="fas fa-save me-2"></i>Apply Correction
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user me-2"></i>Customer Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>{{ customer.name }}</h6>
+                <p class="text-muted">{{ customer.phone }}</p>
+
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border rounded p-3 bg-warning text-white">
+                            <h5 class="mb-0">${{ current_debt_usd|floatformat:2 }}</h5>
+                            <small>USD Debt</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-3 bg-warning text-white">
+                            <h5 class="mb-0">{{ current_debt_sos|floatformat:0 }}</h5>
+                            <small>SOS Debt</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row text-center mt-2">
+                    <div class="col-12">
+                        <div class="border rounded p-3 bg-warning text-white">
+                            <h5 class="mb-0">{{ current_debt_etb|floatformat:2 }}</h5>
+                            <small>ETB Debt</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between">
+                    <span>Customer Since:</span>
+                    <small class="text-muted">{{ customer.date_created|date:"M d, Y" }}</small>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Last Purchase:</span>
+                    <small class="text-muted">
+                        {% if customer.last_purchase_date %}
+                        {{ customer.last_purchase_date|date:"M d, Y" }}
+                        {% else %}
+                        No purchases
+                        {% endif %}
+                    </small>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Status:</span>
+                    {% if current_debt_usd > 0 or current_debt_sos > 0 or current_debt_etb > 0 %}
+                    <span class="badge bg-warning">Has Debt</span>
+                    {% else %}
+                    <span class="badge bg-success">Good Standing</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>Safety Guidelines
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Only use for genuine corrections
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Provide detailed reason for audit trail
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        All changes are logged and tracked
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Cannot be undone without new correction
+                    </li>
+                    <li>
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Requires confirmation before applying
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        {% if recent_corrections %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Recent Corrections
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for correction in recent_corrections %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ correction.currency }} {{ correction.adjustment_amount|floatformat:2 }}</strong>
+                        <br><small class="text-muted">{{ correction.old_debt_amount|floatformat:2 }} → {{
+                            correction.new_debt_amount|floatformat:2 }}</small>
+                        <br>
+                        <small class="text-muted">{{ correction.date_created|date:"M d, Y" }}</small>
+                    </div>
+                    <small class="text-muted">
+                        {% if correction.user %}
+                            {{ correction.user.get_full_name|default:correction.user.username }}
+                        {% else %}
+                            Admin
+                        {% endif %}
+                    </small>
+                </div>
+                {% if not forloop.last %}
+                <hr>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const currencySelect = document.getElementById('{{ form.currency.id_for_label }}');
+        const newAmountInput = document.getElementById('{{ form.new_debt_amount.id_for_label }}');
+        const previewBtn = document.getElementById('previewBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const confirmationSection = document.getElementById('confirmationSection');
+        const confirmationDetails = document.getElementById('confirmationDetails');
+        const confirmCheckbox = document.getElementById('confirmCorrection');
+
+        // Current debt amounts
+        const currentDebtUSD = {{ current_debt_usd }
+    };
+    const currentDebtSOS = {{ current_debt_sos }};
+    const currentDebtETB = {{ current_debt_etb }};
+
+    // Update initial value when currency changes
+    currencySelect.addEventListener('change', function () {
+        if (this.value === 'USD') {
+            newAmountInput.value = currentDebtUSD;
+        } else if (this.value === 'SOS') {
+            newAmountInput.value = currentDebtSOS;
+        } else if (this.value === 'ETB') {
+            newAmountInput.value = currentDebtETB;
+        }
+    });
+
+    // Preview changes
+    previewBtn.addEventListener('click', function () {
+        const currency = currencySelect.value;
+        const newAmount = parseFloat(newAmountInput.value) || 0;
+        let currentAmount;
+        if (currency === 'USD') {
+            currentAmount = currentDebtUSD;
+        } else if (currency === 'SOS') {
+            currentAmount = currentDebtSOS;
+        } else {
+            currentAmount = currentDebtETB;
+        }
+        const adjustment = newAmount - currentAmount;
+
+        if (newAmount < 0) {
+            alert('Debt amount cannot be negative.');
+            return;
+        }
+
+        confirmationDetails.innerHTML = `
+            <div class="row">
+                <div class="col-6">
+                    <strong>Current {{ currency }} Debt:</strong><br>
+                    <span class="text-primary">${currentAmount.toFixed(2)}</span>
+                </div>
+                <div class="col-6">
+                    <strong>New {{ currency }} Debt:</strong><br>
+                    <span class="text-success">${newAmount.toFixed(2)}</span>
+                </div>
+            </div>
+            <div class="mt-2">
+                <strong>Adjustment:</strong> 
+                <span class="${adjustment >= 0 ? 'text-danger' : 'text-success'}">
+                    ${adjustment >= 0 ? '+' : ''}${adjustment.toFixed(2)} {{ currency }}
+                </span>
+            </div>
+        `;
+
+        confirmationSection.style.display = 'block';
+        previewBtn.style.display = 'none';
+        submitBtn.style.display = 'inline-block';
+    });
+
+    // Form submission validation
+    document.getElementById('debtCorrectionForm').addEventListener('submit', function (e) {
+        if (!confirmCheckbox.checked) {
+            e.preventDefault();
+            alert('Please confirm the debt correction before submitting.');
+            return false;
+        }
+
+        // Removed the second confirmation dialog - checkbox confirmation is sufficient
+    });
+});
+</script>
+{% endblock %}

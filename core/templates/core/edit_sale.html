@@ -1,0 +1,405 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Edit Sale - {{ sale.transaction_id|truncatechars:8 }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}"
+                                class="text-decoration-none">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'core:sales_list' %}"
+                                class="text-decoration-none">Sales</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Edit Sale</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 fw-bold mb-0">Edit Sale #{{ sale.transaction_id|truncatechars:8 }}</h1>
+            </div>
+            <a href="{% url 'core:sale_detail' currency sale.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Detail
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-transparent border-bottom py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-edit me-2 text-primary"></i>Sale Information</h5>
+                    <span
+                        class="badge {% if currency == 'USD' %}bg-primary{% elif currency == 'SOS' %}bg-success{% else %}bg-info{% endif %}">
+                        {{ currency }} Sale
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" id="editSaleForm">
+                    {% csrf_token %}
+
+                    <!-- Read-Only Sale Info -->
+                    <div class="alert alert-light border mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <small class="text-muted d-block fw-bold text-uppercase" style="font-size: 0.7rem;">Date
+                                    Created</small>
+                                <span class="fw-bold">{{ sale.date_created|date:"M d, Y h:i A" }}</span>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted d-block fw-bold text-uppercase"
+                                    style="font-size: 0.7rem;">Total Amount</small>
+                                <span class="fw-bold text-primary">
+                                    {{ total_amount_etb|floatformat:2 }} ETB
+                                </span>
+                                <small class="text-muted d-block">
+                                    {% if currency == 'USD' %}${{ total_amount_original|floatformat:2 }} USD{% elif currency == 'SOS' %}{{ total_amount_original|floatformat:2 }} SOS{% else %}{{ total_amount_original|floatformat:2 }} ETB{% endif %}
+                                </small>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted d-block fw-bold text-uppercase"
+                                    style="font-size: 0.7rem;">Current Debt</small>
+                                <span
+                                    class="fw-bold {% if debt_amount_etb > 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ debt_amount_etb|floatformat:2 }} ETB
+                                </span>
+                                <small class="text-muted d-block">
+                                    {% if currency == 'USD' %}${{ debt_amount_original|floatformat:2 }} USD{% elif currency == 'SOS' %}{{ debt_amount_original|floatformat:2 }} SOS{% else %}{{ debt_amount_original|floatformat:2 }} ETB{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Section (Conditionally Shown) -->
+                    <div class="mb-4" id="customerSection" {% if debt_amount_etb <= 0 %}style="display: none;"{% endif %}>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold small text-muted mb-0">CUSTOMER <span class="text-danger" id="customerRequired">*</span></label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addCustomerBtn" data-bs-toggle="modal" data-bs-target="#addCustomerModal" {% if debt_amount_etb <= 0 %}style="display: none;"{% endif %}>
+                                <i class="fas fa-plus me-1"></i>Add Customer
+                            </button>
+                        </div>
+                        <select name="customer" id="customerSelect" class="form-select bg-light border-0 py-3" {% if debt_amount_etb > 0 %}required{% endif %}>
+                            <option value="">-- Select Customer --</option>
+                            {% for cust in customers %}
+                            <option value="{{ cust.id }}" {% if sale.customer and sale.customer.id == cust.id %}selected{% endif %}>
+                                {{ cust.name }} ({{ cust.phone }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text" id="customerHelpText">Customer is required when the sale has outstanding debt. Changing the customer will move this debt to the new customer's account.</div>
+                    </div>
+
+
+
+                    <!-- Payment Section -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">AMOUNT PAID</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0 fw-bold">
+                                {% if currency == 'USD' %}${% else %}{{ currency }}{% endif %}
+                            </span>
+                            <input type="number" step="0.01" name="amount_paid"
+                                class="form-control bg-light border-0 py-3 fw-bold" value="{{ sale.amount_paid }}"
+                                required id="amountPaidInput">
+                        </div>
+                        <div class="form-text text-end mt-1" id="debtPreview">
+                            New Debt Calculation: <span class="fw-bold text-dark">--</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-5">
+                        <a href="{% url 'core:sales_list' %}" class="btn btn-light px-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-5 fw-bold">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Real backend values passed from view
+        const totalAmountOriginal = parseFloat("{{ total_amount_original|stringformat:'f' }}");
+        const currency = '{{ currency }}';
+        const usdToEtbRate = parseFloat("{{ usd_to_etb_rate|stringformat:'f' }}");
+        const usdToSosRate = parseFloat("{{ usd_to_sos_rate|stringformat:'f' }}");
+        
+        // Calculate ETB conversion rate based on currency
+        let conversionRate = 1; // For ETB
+        if (currency === 'USD') {
+            conversionRate = usdToEtbRate;
+        } else if (currency === 'SOS') {
+            // SOS -> USD -> ETB
+            if (usdToSosRate > 0) {
+                conversionRate = (1 / usdToSosRate) * usdToEtbRate;
+            }
+        }
+        
+        const totalAmountEtb = totalAmountOriginal * conversionRate;
+        
+        const amountPaidInput = document.getElementById('amountPaidInput');
+        const debtPreview = document.getElementById('debtPreview');
+        const customerSection = document.getElementById('customerSection');
+        const customerSelect = document.getElementById('customerSelect');
+        const customerRequired = document.getElementById('customerRequired');
+        const customerHelpText = document.getElementById('customerHelpText');
+        const addCustomerBtn = document.getElementById('addCustomerBtn');
+        const DEBT_THRESHOLD = 0.01; // Small threshold to avoid floating-point errors
+
+        function calculateDebt(paid) {
+            // Calculate in original currency first
+            const debtOriginal = Math.max(0, totalAmountOriginal - (parseFloat(paid) || 0));
+            // Convert to ETB
+            return debtOriginal * conversionRate;
+        }
+
+        function updateDebtPreview() {
+            const paid = parseFloat(amountPaidInput.value) || 0;
+            const debtEtb = calculateDebt(paid);
+            const debtOriginal = Math.max(0, totalAmountOriginal - paid);
+
+            let formattedDebtEtb = debtEtb.toFixed(2);
+            let formattedDebtOriginal = debtOriginal.toFixed(2);
+            
+            let originalCurrencySymbol = '';
+            if (currency === 'USD') {
+                originalCurrencySymbol = '$';
+            }
+
+            debtPreview.innerHTML = `
+                New Debt: <span class="fw-bold ${debtEtb > DEBT_THRESHOLD ? 'text-danger' : 'text-success'}">${formattedDebtEtb} ETB</span>
+                <br><small class="text-muted">${originalCurrencySymbol}${formattedDebtOriginal} ${currency}</small>
+            `;
+        }
+
+        function toggleCustomerSection() {
+            const paid = parseFloat(amountPaidInput.value) || 0;
+            const debtEtb = calculateDebt(paid);
+            const hadDebt = customerSection.style.display !== 'none';
+
+            if (debtEtb > DEBT_THRESHOLD) {
+                // Show customer section and make it required
+                customerSection.style.display = 'block';
+                customerSelect.required = true;
+                customerRequired.style.display = 'inline';
+                customerHelpText.style.display = 'block';
+                // Show add customer button
+                if (addCustomerBtn) {
+                    addCustomerBtn.style.display = 'inline-block';
+                }
+                // Preserve existing customer value if section was already visible
+                // If section was hidden and now showing, keep current value (may be empty or selected)
+            } else {
+                // Hide customer section, clear value, and remove required
+                customerSection.style.display = 'none';
+                customerSelect.required = false;
+                // Clear customer value when debt is fully paid
+                customerSelect.value = '';
+                customerRequired.style.display = 'none';
+                customerHelpText.style.display = 'none';
+                // Hide add customer button
+                if (addCustomerBtn) {
+                    addCustomerBtn.style.display = 'none';
+                }
+            }
+        }
+
+        function updateUI() {
+            updateDebtPreview();
+            toggleCustomerSection();
+        }
+
+        // Update on input (real-time)
+        amountPaidInput.addEventListener('input', updateUI);
+
+        // Ensure no negative values
+        amountPaidInput.addEventListener('change', function () {
+            if (this.value < 0) this.value = 0;
+            if (this.value > totalAmountOriginal) {
+                this.value = totalAmountOriginal;
+            }
+            updateUI();
+        });
+
+        // Form submission validation
+        document.getElementById('editSaleForm').addEventListener('submit', function (e) {
+            const paid = parseFloat(amountPaidInput.value) || 0;
+            const debtEtb = calculateDebt(paid);
+
+            // If debt exists but no customer selected, prevent submission
+            if (debtEtb > DEBT_THRESHOLD && !customerSelect.value) {
+                e.preventDefault();
+                alert('Customer is required when the sale has outstanding debt. Please select a customer or pay the full amount.');
+                customerSection.style.display = 'block';
+                customerSelect.focus();
+                return false;
+            }
+
+            // If fully paid, clear customer field (will be cleared by backend too)
+            if (debtEtb <= DEBT_THRESHOLD) {
+                customerSelect.value = '';
+                customerSelect.required = false;
+            }
+        });
+
+        // Initial UI update
+        updateUI();
+    });
+</script>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCustomerModalLabel">
+                    <i class="fas fa-user-plus me-2"></i>Add New Customer
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addCustomerForm">
+                <div class="modal-body">
+                    <div id="customerFormErrors" class="alert alert-danger" style="display: none;"></div>
+                    <div class="mb-3">
+                        <label for="newCustomerName" class="form-label">Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="newCustomerName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newCustomerPhone" class="form-label">Phone <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="newCustomerPhone" name="phone" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Create Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Customer creation modal handling
+    document.addEventListener('DOMContentLoaded', function () {
+        const addCustomerForm = document.getElementById('addCustomerForm');
+        const addCustomerModalElement = document.getElementById('addCustomerModal');
+        if (!addCustomerModalElement) return;
+        
+        const addCustomerModal = new bootstrap.Modal(addCustomerModalElement);
+        const customerSelect = document.getElementById('customerSelect');
+        const customerFormErrors = document.getElementById('customerFormErrors');
+
+        // Handle form submission
+        addCustomerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('newCustomerName').value.trim();
+            const phone = document.getElementById('newCustomerPhone').value.trim();
+            
+            // Clear previous errors
+            customerFormErrors.style.display = 'none';
+            customerFormErrors.innerHTML = '';
+
+            if (!name || !phone) {
+                customerFormErrors.innerHTML = 'Name and phone are required.';
+                customerFormErrors.style.display = 'block';
+                return;
+            }
+
+            // Disable submit button
+            const submitBtn = addCustomerForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+
+            // Get CSRF token from form or cookie
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+
+            // Create customer via AJAX
+            fetch('{% url "core:api_create_customer" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    name: name,
+                    phone: phone
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add new customer to dropdown
+                    const option = document.createElement('option');
+                    option.value = data.customer.id;
+                    option.textContent = `${data.customer.name} (${data.customer.phone})`;
+                    option.selected = true;
+                    customerSelect.appendChild(option);
+                    
+                    // Select the new customer
+                    customerSelect.value = data.customer.id;
+                    
+                    // Close modal and reset form
+                    addCustomerModal.hide();
+                    addCustomerForm.reset();
+                    customerFormErrors.style.display = 'none';
+                    
+                    // Show success message
+                    const successAlert = document.createElement('div');
+                    successAlert.className = 'alert alert-success alert-dismissible fade show';
+                    successAlert.innerHTML = `
+                        <i class="fas fa-check-circle me-2"></i>Customer "${data.customer.name}" created successfully!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.querySelector('.card-body').insertBefore(successAlert, customerSection);
+                    
+                    // Auto-dismiss after 3 seconds
+                    setTimeout(() => {
+                        successAlert.remove();
+                    }, 3000);
+                } else {
+                    // Show error
+                    customerFormErrors.innerHTML = data.error || 'Failed to create customer. Please try again.';
+                    customerFormErrors.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                customerFormErrors.innerHTML = 'An error occurred. Please try again.';
+                customerFormErrors.style.display = 'block';
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        });
+
+        // Reset form when modal is closed
+        document.getElementById('addCustomerModal').addEventListener('hidden.bs.modal', function () {
+            addCustomerForm.reset();
+            customerFormErrors.style.display = 'none';
+            customerFormErrors.innerHTML = '';
+        });
+    });
+</script>
+{% endblock %}
