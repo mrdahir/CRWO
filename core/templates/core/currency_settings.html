@@ -21,7 +21,7 @@
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             {{ form.usd_to_sos_rate|as_crispy_field }}
@@ -32,29 +32,34 @@
                                 <label class="form-label">Siciirka Sarifka Hadda</label>
                                 <div class="input-group mb-2">
                                     <span class="input-group-text">1 USD =</span>
-                                    <input type="text" class="form-control" value="{{ currency_settings.usd_to_sos_rate|floatformat:2 }}" readonly>
+                                    <input type="text" class="form-control"
+                                        value="{{ currency_settings.usd_to_sos_rate|floatformat:2 }}" readonly>
                                     <span class="input-group-text">SOS</span>
                                 </div>
                                 <div class="input-group">
                                     <span class="input-group-text">1 SOS =</span>
-                                    <input type="text" class="form-control" value="{{ currency_settings.sos_to_usd_rate|floatformat:6 }}" readonly>
+                                    <input type="text" class="form-control"
+                                        value="{{ currency_settings.sos_to_usd_rate|floatformat:6 }}" readonly>
                                     <span class="input-group-text">USD</span>
                                 </div>
                                 <div class="input-group mb-2 mt-3">
                                     <span class="input-group-text">1 USD =</span>
-                                    <input type="text" class="form-control" value="{{ currency_settings.usd_to_etb_rate|floatformat:2 }}" readonly>
+                                    <input type="text" class="form-control"
+                                        value="{{ currency_settings.usd_to_etb_rate|floatformat:2 }}" readonly>
                                     <span class="input-group-text">ETB</span>
                                 </div>
                                 <div class="input-group">
                                     <span class="input-group-text">1 ETB =</span>
-                                    <input type="text" class="form-control" value="{{ currency_settings.etb_to_usd_rate|floatformat:6 }}" readonly>
+                                    <input type="text" class="form-control"
+                                        value="{{ currency_settings.etb_to_usd_rate|floatformat:6 }}" readonly>
                                     <span class="input-group-text">USD</span>
                                 </div>
-                                <small class="form-text text-muted">Hadii la soo celiyay: {{ currency_settings.date_updated|date:"M d, Y H:i" }}</small>
+                                <small class="form-text text-muted">Hadii la soo celiyay: {{
+                                    currency_settings.date_updated|date:"M d, Y H:i" }}</small>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save me-2"></i>Siciirka Sarifka Cusboonaysi
@@ -64,7 +69,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header">
@@ -88,9 +93,9 @@
                         <span class="badge bg-info">Regional</span>
                     </div>
                 </div>
-                
+
                 <hr>
-                
+
                 <div class="mb-3">
                     <h6>saamaynta sicirku kuleeyahay systemkan</h6>
                     <ul class="list-unstyled">
@@ -112,16 +117,16 @@
                         </li>
                     </ul>
                 </div>
-                
+
                 <hr>
-                
+
                 <div class="alert alert-info">
                     <i class="fas fa-lightbulb me-2"></i>
                     <strong>FG:</strong> isudey inad update gareyso maalinwalba.
                 </div>
             </div>
         </div>
-        
+
         <div class="card mt-3">
             <div class="card-header">
                 <h5 class="card-title mb-0">
@@ -144,11 +149,13 @@
                 {% if currency_settings.updated_by %}
                 <div class="d-flex justify-content-between">
                     <span>cidda update gareysay</span>
-                    <small class="text-muted">{{ currency_settings.updated_by.get_full_name|default:currency_settings.updated_by.username }}</small>
+                    <small class="text-muted">{{
+                        currency_settings.updated_by.get_full_name|default:currency_settings.updated_by.username
+                        }}</small>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

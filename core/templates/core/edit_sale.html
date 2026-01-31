@@ -53,7 +53,9 @@
                                     {{ total_amount_etb|floatformat:2 }} ETB
                                 </span>
                                 <small class="text-muted d-block">
-                                    {% if currency == 'USD' %}${{ total_amount_original|floatformat:2 }} USD{% elif currency == 'SOS' %}{{ total_amount_original|floatformat:2 }} SOS{% else %}{{ total_amount_original|floatformat:2 }} ETB{% endif %}
+                                    {% if currency == 'USD' %}${{ total_amount_original|floatformat:2 }} USD{% elif
+                                    currency == 'SOS' %}{{ total_amount_original|floatformat:2 }} SOS{% else %}{{
+                                    total_amount_original|floatformat:2 }} ETB{% endif %}
                                 </small>
                             </div>
                             <div class="col-md-4">
@@ -64,29 +66,38 @@
                                     {{ debt_amount_etb|floatformat:2 }} ETB
                                 </span>
                                 <small class="text-muted d-block">
-                                    {% if currency == 'USD' %}${{ debt_amount_original|floatformat:2 }} USD{% elif currency == 'SOS' %}{{ debt_amount_original|floatformat:2 }} SOS{% else %}{{ debt_amount_original|floatformat:2 }} ETB{% endif %}
+                                    {% if currency == 'USD' %}${{ debt_amount_original|floatformat:2 }} USD{% elif
+                                    currency == 'SOS' %}{{ debt_amount_original|floatformat:2 }} SOS{% else %}{{
+                                    debt_amount_original|floatformat:2 }} ETB{% endif %}
                                 </small>
                             </div>
                         </div>
                     </div>
 
                     <!-- Customer Section (Conditionally Shown) -->
-                    <div class="mb-4" id="customerSection" {% if debt_amount_etb <= 0 %}style="display: none;"{% endif %}>
+                    <div class="mb-4" id="customerSection" {% if debt_amount_etb <=0 %}style="display: none;" {% endif
+                        %}>
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="form-label fw-bold small text-muted mb-0">CUSTOMER <span class="text-danger" id="customerRequired">*</span></label>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="addCustomerBtn" data-bs-toggle="modal" data-bs-target="#addCustomerModal" {% if debt_amount_etb <= 0 %}style="display: none;"{% endif %}>
+                            <label class="form-label fw-bold small text-muted mb-0">CUSTOMER <span class="text-danger"
+                                    id="customerRequired">*</span></label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addCustomerBtn"
+                                data-bs-toggle="modal" data-bs-target="#addCustomerModal" {% if debt_amount_etb <=0
+                                %}style="display: none;" {% endif %}>
                                 <i class="fas fa-plus me-1"></i>Add Customer
                             </button>
                         </div>
-                        <select name="customer" id="customerSelect" class="form-select bg-light border-0 py-3" {% if debt_amount_etb > 0 %}required{% endif %}>
+                        <select name="customer" id="customerSelect" class="form-select bg-light border-0 py-3" {% if
+                            debt_amount_etb> 0 %}required{% endif %}>
                             <option value="">-- Select Customer --</option>
                             {% for cust in customers %}
-                            <option value="{{ cust.id }}" {% if sale.customer and sale.customer.id == cust.id %}selected{% endif %}>
+                            <option value="{{ cust.id }}" {% if sale.customer and sale.customer.id==cust.id %}selected{%
+                                endif %}>
                                 {{ cust.name }} ({{ cust.phone }})
                             </option>
                             {% endfor %}
                         </select>
-                        <div class="form-text" id="customerHelpText">Customer is required when the sale has outstanding debt. Changing the customer will move this debt to the new customer's account.</div>
+                        <div class="form-text" id="customerHelpText">Customer is required when the sale has outstanding
+                            debt. Changing the customer will move this debt to the new customer's account.</div>
                     </div>
 
 
@@ -126,7 +137,7 @@
         const currency = '{{ currency }}';
         const usdToEtbRate = parseFloat("{{ usd_to_etb_rate|stringformat:'f' }}");
         const usdToSosRate = parseFloat("{{ usd_to_sos_rate|stringformat:'f' }}");
-        
+
         // Calculate ETB conversion rate based on currency
         let conversionRate = 1; // For ETB
         if (currency === 'USD') {
@@ -137,9 +148,9 @@
                 conversionRate = (1 / usdToSosRate) * usdToEtbRate;
             }
         }
-        
+
         const totalAmountEtb = totalAmountOriginal * conversionRate;
-        
+
         const amountPaidInput = document.getElementById('amountPaidInput');
         const debtPreview = document.getElementById('debtPreview');
         const customerSection = document.getElementById('customerSection');
@@ -163,7 +174,7 @@
 
             let formattedDebtEtb = debtEtb.toFixed(2);
             let formattedDebtOriginal = debtOriginal.toFixed(2);
-            
+
             let originalCurrencySymbol = '';
             if (currency === 'USD') {
                 originalCurrencySymbol = '$';
@@ -268,7 +279,8 @@
                         <input type="text" class="form-control" id="newCustomerName" name="name" required>
                     </div>
                     <div class="mb-3">
-                        <label for="newCustomerPhone" class="form-label">Phone <span class="text-danger">*</span></label>
+                        <label for="newCustomerPhone" class="form-label">Phone <span
+                                class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="newCustomerPhone" name="phone" required>
                     </div>
                 </div>
@@ -289,18 +301,18 @@
         const addCustomerForm = document.getElementById('addCustomerForm');
         const addCustomerModalElement = document.getElementById('addCustomerModal');
         if (!addCustomerModalElement) return;
-        
+
         const addCustomerModal = new bootstrap.Modal(addCustomerModalElement);
         const customerSelect = document.getElementById('customerSelect');
         const customerFormErrors = document.getElementById('customerFormErrors');
 
         // Handle form submission
-        addCustomerForm.addEventListener('submit', function(e) {
+        addCustomerForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            
+
             const name = document.getElementById('newCustomerName').value.trim();
             const phone = document.getElementById('newCustomerPhone').value.trim();
-            
+
             // Clear previous errors
             customerFormErrors.style.display = 'none';
             customerFormErrors.innerHTML = '';
@@ -346,52 +358,52 @@
                     phone: phone
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Add new customer to dropdown
-                    const option = document.createElement('option');
-                    option.value = data.customer.id;
-                    option.textContent = `${data.customer.name} (${data.customer.phone})`;
-                    option.selected = true;
-                    customerSelect.appendChild(option);
-                    
-                    // Select the new customer
-                    customerSelect.value = data.customer.id;
-                    
-                    // Close modal and reset form
-                    addCustomerModal.hide();
-                    addCustomerForm.reset();
-                    customerFormErrors.style.display = 'none';
-                    
-                    // Show success message
-                    const successAlert = document.createElement('div');
-                    successAlert.className = 'alert alert-success alert-dismissible fade show';
-                    successAlert.innerHTML = `
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Add new customer to dropdown
+                        const option = document.createElement('option');
+                        option.value = data.customer.id;
+                        option.textContent = `${data.customer.name} (${data.customer.phone})`;
+                        option.selected = true;
+                        customerSelect.appendChild(option);
+
+                        // Select the new customer
+                        customerSelect.value = data.customer.id;
+
+                        // Close modal and reset form
+                        addCustomerModal.hide();
+                        addCustomerForm.reset();
+                        customerFormErrors.style.display = 'none';
+
+                        // Show success message
+                        const successAlert = document.createElement('div');
+                        successAlert.className = 'alert alert-success alert-dismissible fade show';
+                        successAlert.innerHTML = `
                         <i class="fas fa-check-circle me-2"></i>Customer "${data.customer.name}" created successfully!
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     `;
-                    document.querySelector('.card-body').insertBefore(successAlert, customerSection);
-                    
-                    // Auto-dismiss after 3 seconds
-                    setTimeout(() => {
-                        successAlert.remove();
-                    }, 3000);
-                } else {
-                    // Show error
-                    customerFormErrors.innerHTML = data.error || 'Failed to create customer. Please try again.';
+                        document.querySelector('.card-body').insertBefore(successAlert, customerSection);
+
+                        // Auto-dismiss after 3 seconds
+                        setTimeout(() => {
+                            successAlert.remove();
+                        }, 3000);
+                    } else {
+                        // Show error
+                        customerFormErrors.innerHTML = data.error || 'Failed to create customer. Please try again.';
+                        customerFormErrors.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    customerFormErrors.innerHTML = 'An error occurred. Please try again.';
                     customerFormErrors.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                customerFormErrors.innerHTML = 'An error occurred. Please try again.';
-                customerFormErrors.style.display = 'block';
-                console.error('Error:', error);
-            })
-            .finally(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            });
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                });
         });
 
         // Reset form when modal is closed

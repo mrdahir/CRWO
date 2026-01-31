@@ -7,7 +7,8 @@
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}"
+                        class="text-decoration-none">Dashboard</a></li>
                 <li class="breadcrumb-item active">Revenue Details</li>
             </ol>
         </nav>
@@ -65,9 +66,9 @@
             <div class="col-md-4">
                 <label class="form-label small fw-bold">Period</label>
                 <select name="days" class="form-select" onchange="this.form.submit()">
-                    <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
-                    <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
-                    <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+                    <option value="7" {% if days==7 %}selected{% endif %}>Last 7 days</option>
+                    <option value="30" {% if days==30 %}selected{% endif %}>Last 30 days</option>
+                    <option value="90" {% if days==90 %}selected{% endif %}>Last 90 days</option>
                 </select>
             </div>
             <div class="col-md-4">
@@ -75,7 +76,7 @@
                 <select name="category" class="form-select" onchange="this.form.submit()">
                     <option value="">All Categories</option>
                     {% for cat in categories %}
-                    <option value="{{ cat.id }}" {% if category_filter == cat.id|stringformat:"s" %}selected{% endif %}>
+                    <option value="{{ cat.id }}" {% if category_filter==cat.id|stringformat:"s" %}selected{% endif %}>
                         {{ cat.name }}
                     </option>
                     {% endfor %}
@@ -84,9 +85,10 @@
             <div class="col-md-4">
                 <label class="form-label small fw-bold">Sort By</label>
                 <select name="sort" class="form-select" onchange="this.form.submit()">
-                    <option value="revenue" {% if sort_by == 'revenue' %}selected{% endif %}>Revenue (High to Low)</option>
-                    <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Quantity Sold</option>
-                    <option value="date" {% if sort_by == 'date' %}selected{% endif %}>Most Recent</option>
+                    <option value="revenue" {% if sort_by=='revenue' %}selected{% endif %}>Revenue (High to Low)
+                    </option>
+                    <option value="quantity" {% if sort_by=='quantity' %}selected{% endif %}>Quantity Sold</option>
+                    <option value="date" {% if sort_by=='date' %}selected{% endif %}>Most Recent</option>
                 </select>
             </div>
             <div class="col-md-3 mt-2">
@@ -114,7 +116,8 @@
         <!-- Desktop View -->
         <div class="d-none d-md-block">
             {% for item in revenue_items %}
-            <div class="border-bottom p-3 hover-bg-light" style="cursor: pointer" onclick="toggleDetails('details-{{ forloop.counter }}')">
+            <div class="border-bottom p-3 hover-bg-light" style="cursor: pointer"
+                onclick="toggleDetails('details-{{ forloop.counter }}')">
                 <div class="d-flex align-items-center">
                     <div class="flex-grow-1">
                         <div class="fw-bold text-primary">{{ item.product.name }}</div>
@@ -145,7 +148,8 @@
                                     <td>{{ sale_item.unit_price|floatformat:2 }}</td>
                                     <td class="fw-bold">{{ sale_item.total_price|floatformat:2 }}</td>
                                     <td>
-                                        <span class="badge {% if sale_item.currency == 'USD' %}bg-primary{% elif sale_item.currency == 'SOS' %}bg-success{% else %}bg-info{% endif %}">
+                                        <span
+                                            class="badge {% if sale_item.currency == 'USD' %}bg-primary{% elif sale_item.currency == 'SOS' %}bg-success{% else %}bg-info{% endif %}">
                                             {{ sale_item.currency }}
                                         </span>
                                     </td>
@@ -203,7 +207,7 @@
         const element = document.getElementById(id);
         const iconId = id.split('-')[1];
         const icon = document.getElementById('icon-' + iconId);
-        
+
         if (element && icon) {
             if (element.style.display === 'none') {
                 element.style.display = 'block';

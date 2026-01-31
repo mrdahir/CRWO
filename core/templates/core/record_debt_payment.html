@@ -223,9 +223,9 @@
                     </div>
                     <small class="text-muted">
                         {% if payment.user %}
-                            {{ payment.user.get_full_name|default:payment.user.username }}
+                        {{ payment.user.get_full_name|default:payment.user.username }}
                         {% else %}
-                            Admin
+                        Admin
                         {% endif %}
                     </small>
                 </div>
