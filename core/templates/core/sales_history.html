@@ -22,19 +22,19 @@
             <div class="col-md-3 col-6">
                 <label class="form-label small fw-bold">Waqtiga</label>
                 <select name="days" class="form-select" onchange="this.form.submit()">
-                    <option value="7" {% if days==7 %}selected{% endif %}>Last 7 days</option>
-                    <option value="30" {% if days==30 %}selected{% endif %}>Last 30 days</option>
-                    <option value="90" {% if days==90 %}selected{% endif %}>Last 90 days</option>
-                    <option value="365" {% if days==365 %}selected{% endif %}>Last year</option>
+                    <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+                    <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+                    <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+                    <option value="365" {% if days == 365 %}selected{% endif %}>Last year</option>
                 </select>
             </div>
             <div class="col-md-3 col-6">
                 <label class="form-label small fw-bold">Lacagta</label>
                 <select name="currency" class="form-select" onchange="this.form.submit()">
                     <option value="">All Currencies</option>
-                    <option value="USD" {% if currency_filter=='USD' %}selected{% endif %}>USD</option>
-                    <option value="SOS" {% if currency_filter=='SOS' %}selected{% endif %}>SOS</option>
-                    <option value="ETB" {% if currency_filter=='ETB' %}selected{% endif %}>ETB</option>
+                    <option value="USD" {% if currency_filter == 'USD' %}selected{% endif %}>USD</option>
+                    <option value="SOS" {% if currency_filter == 'SOS' %}selected{% endif %}>SOS</option>
+                    <option value="ETB" {% if currency_filter == 'ETB' %}selected{% endif %}>ETB</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -96,9 +96,7 @@
                             {% endif %}
                         </td>
                         <td class="fw-bold">{{ sale.amount_etb|floatformat:2 }} ETB</td>
-                        <td><span
-                                class="badge {% if sale.currency == 'USD' %}bg-primary{% elif sale.currency == 'SOS' %}bg-success{% else %}bg-info{% endif %}">{{
-                                sale.currency }}</span></td>
+                        <td><span class="badge {% if sale.currency == 'USD' %}bg-primary{% elif sale.currency == 'SOS' %}bg-success{% else %}bg-info{% endif %}">{{ sale.currency }}</span></td>
                         <td>{{ sale.amount_paid|floatformat:2 }}</td>
                         <td>
                             {% if sale.debt_amount > 0 %}
@@ -136,9 +134,16 @@
                             {% endif %}
                         </div>
                     </div>
-                    <span
-                        class="badge {% if sale.currency == 'USD' %}bg-primary{% elif sale.currency == 'SOS' %}bg-success{% else %}bg-info{% endif %}">{{
-                        sale.currency }}</span>
+                    <span class="badge 
+                        {% if sale.currency == 'USD' %}
+                            bg-primary
+                        {% elif sale.currency == 'ETB' %}
+                            bg-success
+                        {% else %}
+                            bg-info
+                        {% endif %}">
+                        {{ sale.currency }}
+                    </span>
                 </div>
                 <div class="row g-2 mt-2">
                     <div class="col-6">

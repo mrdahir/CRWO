@@ -311,8 +311,9 @@ class DebtPaymentForm(forms.ModelForm):
     
     class Meta:
         model = DebtPayment
-        fields = ['amount', 'notes']  # Removed customer field since it's passed from view
+        fields = ['amount', 'pno', 'notes']  # Removed customer field since it's passed from view
         widgets = {
+            'pno': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Receipt Number (PNO)'}),
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
         

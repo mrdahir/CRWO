@@ -213,6 +213,13 @@
                     </div>
                 </div>
             </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <label class="form-label fw-bold">Receipt Number (PNO)</label>
+                    <input type="text" class="form-control form-control-lg" id="salePno" name="pno"
+                        placeholder="Enter Receipt/File Number for this transaction" autocomplete="off">
+                </div>
+            </div>
             <div class="row mt-2">
                 <div class="col-12">
                     <div class="p-2 bg-light rounded">
@@ -338,8 +345,8 @@
                         <input type="tel" class="form-control" name="phone" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Email (looma baahna)</label>
-                        <input type="email" class="form-control" name="email">
+                        <label class="form-label">PNO</label>
+                        <input type="text" class="form-control" name="pno">
                     </div>
                 </form>
             </div>
@@ -378,6 +385,12 @@
 
         // Set up amount paid handler
         document.getElementById('amountPaid').addEventListener('input', updateDebtAmount);
+
+        // PNO input handler for validation
+        const pnoInput = document.getElementById('salePno');
+        if (pnoInput) {
+            pnoInput.addEventListener('input', validateForm);
+        }
 
         // Auto-focus on product search (customer search is hidden by default)
         document.getElementById('productSearch').focus();
@@ -425,11 +438,12 @@
         } else {
             resultsDiv.innerHTML = customers.map(customer => `
             <div class="list-group-item list-group-item-action" 
-                 onclick="selectCustomer(${customer.id}, '${customer.name}', '${customer.phone}')">
+                 onclick="selectCustomer(${customer.id}, '${customer.name}', '${customer.phone}', '${customer.pno || ''}')">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <strong>${customer.name}</strong><br>
                         <small class="text-muted">${customer.phone}</small>
+                        ${customer.pno ? `<br><small class="text-info">PNO: ${customer.pno}</small>` : ''}
                     </div>
                     ${customer.total_debt > 0 ? `<span class="badge bg-warning">$${customer.total_debt}</span>` : ''}
                 </div>
@@ -440,10 +454,14 @@
         resultsDiv.style.display = 'block';
     }
 
-    function selectCustomer(id, name, phone) {
+    function selectCustomer(id, name, phone, pno = '') {
         document.getElementById('customerId').value = id;
-        document.getElementById('customerName').textContent = name;
-        document.getElementById('customerPhone').textContent = phone;
+        const customerNameEl = document.getElementById('customerName');
+        const customerPhoneEl = document.getElementById('customerPhone');
+
+        customerNameEl.textContent = name;
+        customerPhoneEl.innerHTML = phone + (pno ? `<br><small class="text-info">PNO: ${pno}</small>` : '');
+
         document.getElementById('selectedCustomer').style.display = 'block';
         document.getElementById('customerResults').style.display = 'none';
         document.getElementById('customerSearch').value = '';
@@ -736,6 +754,8 @@
         // Show/hide customer field based on debt
         const customerCard = document.getElementById('customerCard');
         const addCustomerButton = document.getElementById('addCustomerButtonContainer');
+        const pnoContainer = document.getElementById('pnoContainer');
+        const salePnoInput = document.getElementById('salePno');
 
         // Validation: Customer is ONLY required if there is debt
         // Use a small threshold to avoid floating point issues
@@ -743,10 +763,17 @@
             // Show customer field when there's debt
             if (customerCard) customerCard.style.display = 'block';
             if (addCustomerButton) addCustomerButton.style.display = 'block';
+            if (pnoContainer) pnoContainer.style.display = 'block';
+            if (salePnoInput) salePnoInput.required = true;
         } else {
             // Hide customer field when fully paid
             if (customerCard) customerCard.style.display = 'none';
             if (addCustomerButton) addCustomerButton.style.display = 'none';
+            if (pnoContainer) pnoContainer.style.display = 'none';
+            if (salePnoInput) {
+                salePnoInput.required = false;
+                salePnoInput.value = ''; // Clear PNO if no debt
+            }
             // Clear customer if fully paid to avoid accidental association
             clearCustomer();
         }
@@ -820,13 +847,13 @@
             body: JSON.stringify({
                 name: formData.get('name'),
                 phone: formData.get('phone'),
-                email: formData.get('email')
+                pno: formData.get('pno')
             })
         })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    selectCustomer(data.customer.id, data.customer.name, data.customer.phone);
+                    selectCustomer(data.customer.id, data.customer.name, data.customer.phone, data.customer.pno);
                     bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
                     form.reset();
                     showToast('Customer added successfully', 'success');
@@ -838,6 +865,30 @@
                 console.error('Error adding customer:', error);
                 showToast('Error adding customer', 'error');
             });
+    }
+
+    function validateForm() {
+        const itemCount = selectedProducts.length;
+        const total = parseFloat(document.getElementById('totalAmount').value) || 0;
+        const paid = parseFloat(document.getElementById('amountPaid').value) || 0;
+        const debt = Math.max(0, total - paid);
+        const hasDebt = debt > 0.01;
+
+        let isValid = itemCount > 0;
+
+        if (hasDebt) {
+            const customerId = document.getElementById('customerId').value;
+            const pnoValue = document.getElementById('salePno').value.trim();
+            if (!customerId) isValid = false;
+            if (!pnoValue) isValid = false; // Require PNO for debt
+        }
+
+        const completeBtn = document.getElementById('completeSaleBtn');
+        if (completeBtn) completeBtn.disabled = !isValid;
+
+        // Also update mobile floating button
+        const floatingBtn = document.getElementById('floatingCompleteBtn');
+        if (floatingBtn) floatingBtn.disabled = !isValid;
     }
 
     // FIXED FORM SUBMISSION HANDLER
@@ -856,11 +907,19 @@
         const paid = parseFloat(document.getElementById('amountPaid').value) || 0;
         const debt = Math.max(0, total - paid);
         const customerId = document.getElementById('customerId').value;
+        const pnoValue = document.getElementById('salePno').value.trim();
 
-        if (debt > 0 && !customerId) {
-            showToast('Credit sales require a customer. Please select a customer or pay the full amount.', 'error');
-            document.getElementById('customerSearch').focus();
-            return;
+        if (debt > 0) {
+            if (!customerId) {
+                showToast('Credit sales require a customer. Please select a customer or pay the full amount.', 'error');
+                document.getElementById('customerSearch').focus();
+                return;
+            }
+            if (!pnoValue) {
+                showToast('Please enter a Receipt Number (PNO) for this debt.', 'error');
+                document.getElementById('salePno').focus();
+                return;
+            }
         }
 
         const submitBtn = document.getElementById('completeSaleBtn');
@@ -877,6 +936,12 @@
         }
         formData.append('currency', document.querySelector('input[name="currency"]:checked').value);
         formData.append('amount_paid', document.getElementById('amountPaid').value);
+
+        // Add Sale PNO
+        const salePno = document.getElementById('salePno').value;
+        if (salePno) {
+            formData.append('pno', salePno);
+        }
 
         // Add selected products with converted prices
         selectedProducts.forEach((product, index) => {

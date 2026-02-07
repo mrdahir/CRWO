@@ -811,6 +811,7 @@ def create_sale(request):
             customer_id = request.POST.get('customer')
             currency = request.POST.get('currency', 'USD')
             amount_paid_str = request.POST.get('amount_paid', '0.00')
+            pno = request.POST.get('pno', '').strip()
             
             # Convert amount_paid safely
             try:
@@ -841,7 +842,8 @@ def create_sale(request):
                         user=sale_user,
                         amount_paid=amount_paid,
                         total_amount=Decimal('0.00'),
-                        debt_amount=Decimal('0.00')
+                        debt_amount=Decimal('0.00'),
+                        pno=pno if pno else None
                     )
                 elif currency == 'SOS':
                     sale = SaleSOS.objects.create(
@@ -849,7 +851,8 @@ def create_sale(request):
                         user=sale_user,
                         amount_paid=amount_paid,
                         total_amount=Decimal('0.00'),
-                        debt_amount=Decimal('0.00')
+                        debt_amount=Decimal('0.00'),
+                        pno=pno if pno else None
                     )
                 else:  # ETB
                     sale = SaleETB.objects.create(
@@ -858,7 +861,8 @@ def create_sale(request):
                         amount_paid=amount_paid,
                         total_amount=Decimal('0.00'),
                         debt_amount=Decimal('0.00'),
-                        exchange_rate_at_sale=etb_exchange_rate
+                        exchange_rate_at_sale=etb_exchange_rate,
+                        pno=pno if pno else None
                     )
                 
                 # Process products
@@ -1894,6 +1898,7 @@ def api_search_customers(request):
             'id': customer.id,
             'name': customer.name,
             'phone': customer.phone,
+            'pno': customer.pno or '',
             'total_debt': float(customer.total_debt_sos),
             'last_purchase_date': customer.last_purchase_date.isoformat() if customer.last_purchase_date else None,
         })
@@ -1911,6 +1916,7 @@ def api_create_customer(request):
         data = json.loads(request.body)
         name = data.get('name', '').strip()
         phone = data.get('phone', '').strip()
+        pno = data.get('pno', '').strip()
         
         if not name or not phone:
             return JsonResponse({'success': False, 'error': 'Name and phone are required'}, status=400)
@@ -1922,6 +1928,7 @@ def api_create_customer(request):
         customer = Customer.objects.create(
             name=name,
             phone=phone,
+            pno=pno if pno else None,
         )
         
         # Log audit action
@@ -1937,6 +1944,7 @@ def api_create_customer(request):
                 'id': customer.id,
                 'name': customer.name,
                 'phone': customer.phone,
+                'pno': customer.pno or '',
             }
         })
     
@@ -2683,6 +2691,48 @@ def customers_debt_view(request):
     
     # GET request
     customers_with_debt = Customer.get_customers_with_debt()
+    
+    # Attach detailed outstanding sales to each customer
+    for customer in customers_with_debt:
+        outstanding_sales = []
+        
+        # USD Sales
+        usd_sales = SaleUSD.objects.filter(
+            customer=customer, 
+            debt_amount__gt=0
+        ).prefetch_related('items', 'items__product').order_by('-date_created')
+        
+        for sale in usd_sales:
+            sale.currency_code = 'USD'
+            sale.items_summary = ", ".join([f"{item.product.name} ({item.quantity})" for item in sale.items.all()])
+            outstanding_sales.append(sale)
+            
+        # SOS Sales
+        sos_sales = SaleSOS.objects.filter(
+            customer=customer, 
+            debt_amount__gt=0
+        ).prefetch_related('items', 'items__product').order_by('-date_created')
+        
+        for sale in sos_sales:
+            sale.currency_code = 'SOS'
+            sale.items_summary = ", ".join([f"{item.product.name} ({item.quantity})" for item in sale.items.all()])
+            outstanding_sales.append(sale)
+            
+        # ETB Sales
+        etb_sales = SaleETB.objects.filter(
+            customer=customer, 
+            debt_amount__gt=0
+        ).prefetch_related('items', 'items__product').order_by('-date_created')
+        
+        for sale in etb_sales:
+            sale.currency_code = 'ETB'
+            sale.items_summary = ", ".join([f"{item.product.name} ({item.quantity})" for item in sale.items.all()])
+            outstanding_sales.append(sale)
+            
+        # Sort all outstanding sales by date (newest first)
+        outstanding_sales.sort(key=lambda x: x.date_created, reverse=True)
+        customer.outstanding_sales = outstanding_sales
+
     currency_settings = CurrencySettings.objects.first()
     
     usd_to_etb_rate = currency_settings.usd_to_etb_rate if currency_settings else Decimal('100.00')

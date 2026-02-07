@@ -38,7 +38,7 @@
                     {% csrf_token %}
 
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label
                                 }}</label>
                             {{ form.amount }}
@@ -46,7 +46,14 @@
                             <div class="text-danger small">{{ form.amount.errors.0 }}</div>
                             {% endif %}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label for="{{ form.pno.id_for_label }}" class="form-label">{{ form.pno.label }}</label>
+                            {{ form.pno }}
+                            {% if form.pno.errors %}
+                            <div class="text-danger small">{{ form.pno.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
                             <label for="{{ form.currency.id_for_label }}" class="form-label">{{ form.currency.label
                                 }}</label>
                             {{ form.currency }}
@@ -54,7 +61,7 @@
                             <div class="text-danger small">{{ form.currency.errors.0 }}</div>
                             {% endif %}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label">Customer</label>
                             <div class="form-control-plaintext">{{ customer.name }} ({{ customer.phone }})</div>
                         </div>

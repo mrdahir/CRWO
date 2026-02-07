@@ -153,6 +153,7 @@ class Customer(models.Model):
     """Customer model with separate USD and SOS debt tracking"""
     name = models.CharField(max_length=200, blank=True, null=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
+    pno = models.CharField(max_length=50, null=True, blank=True, verbose_name="Customer PNO")
     total_debt_usd = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Total debt in USD")
     total_debt_sos = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Total debt in SOS")
     total_debt_etb = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Total debt in ETB")
@@ -255,6 +256,7 @@ class SaleUSD(models.Model):
     total_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0.00, help_text="Total amount in USD")
     amount_paid = models.DecimalField(max_digits=20, decimal_places=2, default=0.00, help_text="Amount paid in USD")
     debt_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0.00, help_text="Debt amount in USD")
+    pno = models.CharField(max_length=50, null=True, blank=True, verbose_name="Sale PNO")
     date_created = models.DateTimeField(auto_now_add=True)
     is_completed = models.BooleanField(default=True)
 
@@ -331,6 +333,7 @@ class SaleSOS(models.Model):
     total_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0.00, help_text="Total amount in SOS")
     amount_paid = models.DecimalField(max_digits=20, decimal_places=2, default=0.00, help_text="Amount paid in SOS")
     debt_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0.00, help_text="Debt amount in SOS")
+    pno = models.CharField(max_length=50, null=True, blank=True, verbose_name="Sale PNO")
     date_created = models.DateTimeField(auto_now_add=True)
     is_completed = models.BooleanField(default=True)
 
@@ -417,6 +420,7 @@ class SaleETB(models.Model):
         validators=[MinValueValidator(Decimal('0.01'))],
         help_text="USD to ETB exchange rate at time of sale"
     )
+    pno = models.CharField(max_length=50, null=True, blank=True, verbose_name="Sale PNO")
     date_created = models.DateTimeField(auto_now_add=True)
     is_completed = models.BooleanField(default=True)
 
@@ -1116,6 +1120,7 @@ class DebtPayment(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Payment amount in base currency (SOS)")
     original_currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='SOS', help_text="Original payment currency")
     original_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Original payment amount in original currency")
+    pno = models.CharField(max_length=50, null=True, blank=False, verbose_name="Receipt Number (PNO)")
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='legacy_debt_payments')
     date_created = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True)

@@ -7,8 +7,9 @@
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}"
-                        class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'core:dashboard' %}" class="text-decoration-none">Dashboard</a>
+                </li>
                 <li class="breadcrumb-item active">Customer Debt</li>
             </ol>
         </nav>
@@ -21,12 +22,11 @@
     </div>
 </div>
 
-<!-- Summary Stats -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="card shadow-sm border-0 bg-danger bg-opacity-10">
             <div class="card-body">
-                <p class="text-muted small mb-1">Total Debt</p>
+                <p class="text-muted small mb-1">Total Debt (Approx. Value)</p>
                 <h4 class="fw-bold mb-0 text-danger">{{ total_debt_etb|floatformat:2 }} ETB</h4>
             </div>
         </div>
@@ -57,19 +57,20 @@
     </div>
 </div>
 
-<!-- Customers with Debt -->
 <div class="card shadow-sm">
     <div class="card-header bg-transparent">
-        <h5 class="mb-0 fw-bold"><i class="fas fa-users me-2 text-primary"></i>{{ customers_count }} Customers with Debt
+        <h5 class="mb-0 fw-bold">
+            <i class="fas fa-users me-2 text-primary"></i>{{ customers_count }} Customers with Debt
         </h5>
     </div>
     <div class="card-body p-0">
         {% if customers_with_debt %}
-        <!-- Desktop Table View -->
+
         <div class="d-none d-md-block table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0 align-middle">
                 <thead class="table-light">
                     <tr>
+                        <th style="width: 50px;"></th>
                         <th>Customer</th>
                         <th>USD Debt</th>
                         <th>SOS Debt</th>
@@ -78,30 +79,40 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="accordion-body">
                     {% for customer in customers_with_debt %}
                     <tr>
                         <td>
+                            <button class="btn btn-sm btn-link text-decoration-none" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#dept-details-{{ customer.id }}"
+                                aria-expanded="false">
+                                <i class="fas fa-chevron-right text-muted"></i>
+                            </button>
+                        </td>
+                        <td>
                             <div class="fw-bold">{{ customer.name }}</div>
                             <small class="text-muted">{{ customer.phone }}</small>
+                            {% if customer.pno %}
+                            <br><small class="text-info badge bg-light text-dark border">PNO: {{ customer.pno }}</small>
+                            {% endif %}
                         </td>
                         <td>
                             {% if customer.total_debt_usd > 0 %}
-                            <span class="text-danger fw-bold">${{ customer.total_debt_usd|floatformat:2 }}</span>
+                            <span class="text-secondary fw-bold">${{ customer.total_debt_usd|floatformat:2 }}</span>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if customer.total_debt_sos > 0 %}
-                            <span class="text-danger fw-bold">{{ customer.total_debt_sos|floatformat:0 }}</span>
+                            <span class="text-secondary fw-bold">{{ customer.total_debt_sos|floatformat:0 }}</span>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if customer.total_debt_etb > 0 %}
-                            <span class="text-danger fw-bold">{{ customer.total_debt_etb|floatformat:2 }}</span>
+                            <span class="text-secondary fw-bold">{{ customer.total_debt_etb|floatformat:2 }}</span>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
@@ -115,7 +126,7 @@
                         </td>
                         <td>
                             <button class="btn btn-sm btn-success"
-                                onclick="openPaymentModal({{ customer.id }}, '{{ customer.name }}', {{ customer.total_debt_usd }}, {{ customer.total_debt_sos }}, {{ customer.total_debt_etb }})">
+                                onclick="openPaymentModal({{ customer.id }}, '{{ customer.name|escapejs }}', {{ customer.total_debt_usd|default:0 }}, {{ customer.total_debt_sos|default:0 }}, {{ customer.total_debt_etb|default:0 }})">
                                 <i class="fas fa-money-bill me-1"></i>Payment
                             </button>
                             <a href="{% url 'core:customer_detail' customer.id %}"
@@ -124,12 +135,74 @@
                             </a>
                         </td>
                     </tr>
+
+                    <tr class="collapse bg-light" id="dept-details-{{ customer.id }}">
+                        <td colspan="7" class="p-4">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-header bg-white border-bottom-0">
+                                    <h6 class="mb-0 fw-bold text-primary">
+                                        <i class="fas fa-list-alt me-2"></i>Outstanding Transactions
+                                    </h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm table-borderless mb-0">
+                                        <thead class="text-muted small text-uppercase">
+                                            <tr>
+                                                <th class="ps-3">Date</th>
+                                                <th>PNO</th>
+                                                <th>Items</th>
+                                                <th class="text-end">Total</th>
+                                                <th class="text-end">Paid</th>
+                                                <th class="text-end pe-3">Debt</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for sale in customer.outstanding_sales %}
+                                            <tr class="border-top">
+                                                <td class="ps-3 py-3 align-middle" style="width: 120px;">
+                                                    <small class="fw-bold">{{ sale.date_created|date:"M d, Y" }}</small><br>
+                                                    <small class="text-muted">{{ sale.date_created|date:"H:i A" }}</small>
+                                                </td>
+                                                <td class="align-middle" style="width: 120px;">
+                                                    {% if sale.pno %}
+                                                    <span class="badge bg-dark text-white font-monospace">{{ sale.pno }}</span>
+                                                    {% else %}
+                                                    <span class="text-muted small fst-italic">No PNO</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="align-middle">
+                                                    <small class="text-dark">{{ sale.items_summary|truncatechars:50 }}</small>
+                                                </td>
+                                                <td class="text-end align-middle">
+                                                    <span class="fw-bold">{{ sale.currency_code }} {{ sale.total_amount|floatformat:2 }}</span>
+                                                </td>
+                                                <td class="text-end align-middle">
+                                                    <span class="text-success">{{ sale.currency_code }} {{ sale.amount_paid|floatformat:2 }}</span>
+                                                </td>
+                                                <td class="text-end align-middle pe-3">
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                                                        {{ sale.currency_code }} {{ sale.debt_amount|floatformat:2 }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="6" class="text-center py-3 text-muted">
+                                                    <em>No detailed records found.</em>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <!-- Mobile Card View -->
         <div class="d-md-none">
             {% for customer in customers_with_debt %}
             <div class="border-bottom p-3">
@@ -161,7 +234,7 @@
                 </div>
                 <div class="d-flex gap-2 mt-3">
                     <button class="btn btn-sm btn-success flex-1"
-                        onclick="openPaymentModal({{ customer.id }}, '{{ customer.name }}', {{ customer.total_debt_usd }}, {{ customer.total_debt_sos }}, {{ customer.total_debt_etb }})">
+                        onclick="openPaymentModal({{ customer.id }}, '{{ customer.name|escapejs }}', {{ customer.total_debt_usd|default:0 }}, {{ customer.total_debt_sos|default:0 }}, {{ customer.total_debt_etb|default:0 }})">
                         <i class="fas fa-money-bill me-1"></i>Record Payment
                     </button>
                     <a href="{% url 'core:customer_detail' customer.id %}" class="btn btn-sm btn-outline-primary">
@@ -180,7 +253,6 @@
     </div>
 </div>
 
-<!-- Add Debt Modal -->
 <div class="modal fade" id="addDebtModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -227,7 +299,6 @@
     </div>
 </div>
 
-<!-- Record Payment Modal -->
 <div class="modal fade" id="paymentModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -325,7 +396,6 @@
         }
     }
 
-    // Form validation on submit
     document.getElementById('paymentForm').addEventListener('submit', function (e) {
         const currency = document.getElementById('payment_currency').value;
         const amount = parseFloat(document.getElementById('payment_amount').value) || 0;
